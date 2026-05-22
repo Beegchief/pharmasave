@@ -1,12 +1,254 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>PharmaSave</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
-</html>
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PharmaSave</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css"/>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f8f9fa;color:#1a1a2e}
+    :root{
+      --color-text-primary:#1a1a2e;--color-text-secondary:#6b7280;--color-text-tertiary:#9ca3af;
+      --color-text-info:#2563eb;--color-text-success:#16a34a;--color-text-warning:#d97706;
+      --color-text-danger:#dc2626;--color-text-purple:#7c3aed;--color-text-teal:#0d9488;--color-text-amber:#d97706;
+      --color-background-primary:#ffffff;--color-background-secondary:#f3f4f6;
+      --color-background-info:#dbeafe;--color-background-success:#dcfce7;
+      --color-background-warning:#fef3c7;--color-background-danger:#fee2e2;
+      --color-background-purple:#ede9fe;--color-background-teal:#ccfbf1;--color-background-amber:#fef3c7;
+      --color-border-primary:#e5e7eb;--color-border-secondary:#d1d5db;--color-border-tertiary:#e5e7eb;
+      --color-border-info:#93c5fd;--color-border-success:#86efac;--color-border-warning:#fcd34d;
+      --color-border-danger:#fca5a5;--color-border-purple:#c4b5fd;--color-border-teal:#99f6e4;--color-border-amber:#fcd34d;
+      --font-sans:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;--font-mono:'Courier New',monospace;
+    }
+    @keyframes spin{to{transform:rotate(360deg)}}
+    @keyframes progress{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useRef,useEffect}=React;
+
+const SB_URL="https://zqputthzhuskzqonnvox.supabase.co";
+const SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpxcHV0dGh6aHVza3pxb25udm94Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyMjkyMjgsImV4cCI6MjA5NDgwNTIyOH0.UslOXizMcv83_dJUlrvf36oBiKKHU_Z9-s1e1VJCePg";
+
+const sb={
+  async query(table,method="GET",body=null,filters=""){
+    const res=await fetch(`${SB_URL}/rest/v1/${table}${filters}`,{
+      method,headers:{"apikey":SB_KEY,"Authorization":`Bearer ${SB_KEY}`,"Content-Type":"application/json","Prefer":method==="POST"?"return=representation":""},
+      body:body?JSON.stringify(body):null
+    });
+    if(!res.ok){const e=await res.text();throw new Error(e);}
+    return res.status===204?null:res.json();
+  },
+  async uploadFile(path,file){
+    const res=await fetch(`${SB_URL}/storage/v1/object/scripts/${path}`,{
+      method:"POST",headers:{"apikey":SB_KEY,"Authorization":`Bearer ${SB_KEY}`,"Content-Type":file.type},body:file
+    });
+    if(!res.ok)throw new Error(await res.text());
+  },
+  async signedUrl(path){
+    const res=await fetch(`${SB_URL}/storage/v1/object/sign/scripts/${path}`,{
+      method:"POST",headers:{"apikey":SB_KEY,"Authorization":`Bearer ${SB_KEY}`,"Content-Type":"application/json"},
+      body:JSON.stringify({expiresIn:3600})
+    });
+    if(!res.ok)return null;
+    const data=await res.json();
+    return `${SB_URL}/storage/v1${data.signedURL}`;
+  }
+};
+
+const STAFF=[
+  {id:"S01",name:"Deevesh Govind",role:"admin",title:"Responsible Pharmacist",pin:"11111"},
+  {id:"S02",name:"Munya Ngandu",role:"admin",title:"Owner",pin:"22222"},
+  {id:"S03",name:"Bradley Kunene",role:"dispenser",title:"Pharmacist Intern",pin:"33333"},
+  {id:"S04",name:"Innocent Toke",role:"dispenser",title:"Pharmacy Assistant",pin:"44444"},
+  {id:"S05",name:"Sheren Naidoo",role:"dispenser",title:"Qualified Dispenser",pin:"55555"},
+  {id:"S06",name:"Hamid Khan",role:"locum",title:"Locum Pharmacist",pin:null},
+  {id:"S07",name:"Farida Ahmed",role:"locum",title:"Locum Pharmacist",pin:null},
+  {id:"S08",name:"Priya Bhana",role:"locum",title:"Locum Pharmacist",pin:null},
+  {id:"S09",name:"Maria Jila",role:"locum",title:"Locum Pharmacist",pin:null},
+];
+function dailyPin(id){
+  const today=new Date().toISOString().slice(0,10).replace(/-/g,"");
+  let s=0;for(let i=0;i<id.length;i++)s+=id.charCodeAt(i);
+  for(let i=0;i<today.length;i++)s=(s*31+today.charCodeAt(i))&0xfffff;
+  return String(10000+(s%90000));
+}
+function getPin(s){return s.role==="locum"?dailyPin(s.id):s.pin;}
+const RC={admin:"purple",dispenser:"teal",locum:"amber"};
+const RL={admin:"Admin",dispenser:"Dispenser",locum:"Locum"};
+function can(u,a){if(!u)return false;const r=u.role;if(r==="admin")return true;if(a==="upload"||a==="search")return true;if((a==="addPatient"||a==="editRecord")&&r==="dispenser")return true;return false;}
+function fmtDate(d){if(!d)return"—";const[y,m,day]=d.split("-");return`${day}/${m}/${y}`;}
+function fullName(p){return`${p.first_name} ${p.surname}`;}
+function genPtId(pts){const n=pts.map(p=>parseInt((p.id||"PT0").replace("PT",""),10)).filter(Boolean);return"PT"+String((n.length?Math.max(...n):0)+1).padStart(3,"0");}
+function genRxId(date){return`RX-${date.replace(/-/g,"")}-${String(Math.floor(Math.random()*900)+100)}`;}
+async function toBase64(file){return new Promise(res=>{const r=new FileReader();r.onload=()=>res(r.result.split(",")[1]);r.readAsDataURL(file);});}
+
+const emptyPt={disp_profile_no:"",first_name:"",surname:"",dob:"",id_number:"",phone:"",email:"",address:"",aid_name:"",aid_number:"",dependant_code:"",nok_name:"",nok_phone:""};
+const emptyRx={patientId:"",patientLabel:"",script_date:new Date().toISOString().slice(0,10),valid_until:"",doctor:"",practice_no:"",items:"",diagnosis:"",repeats:"",is_chronic:false,changes:"",dispensed_by_name:"",total_price:"",trailerFile:null,scriptFile:null,trailerPreview:null,scriptPreview:null};
+
+async function parseTrailerLabel(b64){
+  const res=await fetch("https://api.anthropic.com/v1/messages",{
+    method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,messages:[{role:"user",content:[
+      {type:"image",source:{type:"base64",media_type:"image/jpeg",data:b64}},
+      {type:"text",text:`South African pharmacy trailer label sticker. Extract info, return ONLY JSON:
+{"patientSurname":string,"patientFirstName":string|null,"dispenserName":string|null,"medications":string,"scriptDate":string|null,"totalPrice":string|null,"doctor":string|null}
+Date: YYYY-MM-DD. Medications comma-separated with qty and strength. ONLY JSON.`}
+    ]}]})
+  });
+  const data=await res.json();
+  const text=data.content?.find(b=>b.type==="text")?.text||"{}";
+  return JSON.parse(text.replace(/```json|```/g,"").trim());
+}
+
+function App(){
+  const[currentUser,setCurrentUser]=useState(null);
+  const[patients,setPatients]=useState([]);
+  const[scripts,setScripts]=useState([]);
+  const[loading,setLoading]=useState(false);
+  const[tab,setTab]=useState(0);
+  const[search,setSearch]=useState("");
+  const[selPt,setSelPt]=useState(null);
+  const[expRx,setExpRx]=useState(null);
+  const[newPt,setNewPt]=useState(emptyPt);
+  const[newRx,setNewRx]=useState(emptyRx);
+  const[ptSearch,setPtSearch]=useState("");
+  const[toast,setToast]=useState(null);
+  const[scanStep,setScanStep]=useState("idle");
+  const trailerRef=useRef();
+  const scriptRef=useRef();
+
+  useEffect(()=>{if(currentUser)loadPatients();},[currentUser]);
+
+  async function loadPatients(){
+    setLoading(true);
+    try{const data=await sb.query("patients","GET",null,"?order=surname.asc");setPatients(data||[]);}
+    catch(e){showToast("Could not load patients","error");}
+    setLoading(false);
+  }
+  async function loadScripts(pid){
+    try{const data=await sb.query("prescriptions","GET",null,`?patient_id=eq.${pid}&order=script_date.desc`);setScripts(data||[]);}
+    catch(e){showToast("Could not load scripts","error");}
+  }
+
+  if(!currentUser)return React.createElement(LoginScreen,{onLogin:setCurrentUser});
+
+  const TABS=["Search",can(currentUser,"addPatient")&&"Add Patient",can(currentUser,"upload")&&"Upload Script",currentUser.role==="admin"&&"Staff"].filter(Boolean);
+
+  function showToast(msg,type="success"){setToast({msg,type});setTimeout(()=>setToast(null),3500);}
+  async function auditLog(action,detail){try{await sb.query("audit_log","POST",{staff_name:currentUser.name,staff_id:currentUser.id,action,detail});}catch(e){}}
+
+  const filteredPts=patients.filter(p=>{
+    const q=search.toLowerCase();
+    return fullName(p).toLowerCase().includes(q)||p.id?.toLowerCase().includes(q)||p.disp_profile_no?.toLowerCase().includes(q)||p.aid_number?.toLowerCase().includes(q)||p.id_number?.includes(q);
+  });
+
+  async function addPatient(){
+    if(!newPt.first_name.trim()||!newPt.surname.trim())return showToast("First name and surname required","error");
+    setLoading(true);
+    try{
+      const id=genPtId(patients);
+      await sb.query("patients","POST",{...newPt,id,created_by:currentUser.name});
+      setPatients(p=>[...p,{...newPt,id}].sort((a,b)=>a.surname.localeCompare(b.surname)));
+      await auditLog("Added patient",`${newPt.first_name} ${newPt.surname} (${id})`);
+      setNewPt(emptyPt);showToast(`${newPt.first_name} ${newPt.surname} added (${id})`);
+    }catch(e){showToast("Failed to save: "+e.message,"error");}
+    setLoading(false);
+  }
+
+  async function addScript(){
+    if(!newRx.patientId)return showToast("Patient not matched","error");
+    if(!newRx.items.trim())return showToast("Medications are required","error");
+    setLoading(true);
+    try{
+      const id=genRxId(newRx.script_date);
+      let trailer_img_path=null,script_img_path=null;
+      if(newRx.scriptFile){const ext=newRx.scriptFile.name.split(".").pop();script_img_path=`${newRx.patientId}/${id}_script.${ext}`;await sb.uploadFile(script_img_path,newRx.scriptFile);}
+      if(newRx.trailerFile){const ext=newRx.trailerFile.name.split(".").pop();trailer_img_path=`${newRx.patientId}/${id}_trailer.${ext}`;await sb.uploadFile(trailer_img_path,newRx.trailerFile);}
+      const rx={id,patient_id:newRx.patientId,script_date:newRx.script_date||null,valid_until:newRx.valid_until||null,doctor:newRx.doctor,practice_no:newRx.practice_no,items:newRx.items,diagnosis:newRx.diagnosis,is_chronic:newRx.is_chronic,repeats:parseInt(newRx.repeats)||0,changes:newRx.changes,dispensed_by_name:newRx.dispensed_by_name||currentUser.name,dispensed_by_id:currentUser.id,total_price:newRx.total_price,trailer_img_path,script_img_path};
+      await sb.query("prescriptions","POST",rx);
+      if(selPt?.id===newRx.patientId)setScripts(s=>[rx,...s]);
+      await auditLog("Uploaded script",`${id} for ${ptSearch}`);
+      resetScan();showToast(`Script ${id} saved`);setTab(0);
+    }catch(e){showToast("Failed to save: "+e.message,"error");}
+    setLoading(false);
+  }
+
+  async function onScriptPhoto(file){if(!file)return;setNewRx(r=>({...r,scriptFile:file,scriptPreview:URL.createObjectURL(file)}));setScanStep("scanning_script");}
+  async function onTrailerPhoto(file){
+    if(!file)return;
+    const preview=URL.createObjectURL(file);
+    setNewRx(r=>({...r,trailerFile:file,trailerPreview:preview}));
+    setScanStep("parsing");
+    try{
+      const b64=await toBase64(file);
+      const parsed=await parseTrailerLabel(b64);
+      const matched=patients.find(p=>parsed.patientSurname&&p.surname.toLowerCase().includes(parsed.patientSurname.toLowerCase()));
+      setNewRx(r=>({...r,patientId:matched?matched.id:"",script_date:parsed.scriptDate||r.script_date,items:parsed.medications||"",dispensed_by_name:parsed.dispenserName||currentUser.name,total_price:parsed.totalPrice||"",doctor:parsed.doctor||""}));
+      setPtSearch(matched?`${fullName(matched)} (${matched.id})`:(parsed.patientSurname||""));
+      setScanStep("verify");
+    }catch(e){showToast("Could not read label — fill in manually","error");setScanStep("verify");}
+  }
+  function resetScan(){setScanStep("idle");setNewRx(emptyRx);setPtSearch("");}
+
+  const inp={width:"100%",padding:"8px 10px",fontSize:14,border:"1px solid var(--color-border-secondary)",borderRadius:8,background:"var(--color-background-primary)",color:"var(--color-text-primary)",boxSizing:"border-box",outline:"none"};
+  const lbl={fontSize:12,color:"var(--color-text-secondary)",marginBottom:3,display:"block"};
+  const sec=t=><div style={{fontSize:11,fontWeight:500,color:"var(--color-text-tertiary)",textTransform:"uppercase",letterSpacing:"0.06em",margin:"14px 0 8px",borderBottom:"1px solid var(--color-border-tertiary)",paddingBottom:4}}>{t}</div>;
+  const fld=(label,key,val,set,type="text",ph="",req=false)=>(<div style={{marginBottom:10}}><label style={lbl}>{label}{req&&<span style={{color:"var(--color-text-danger)"}}> *</span>}</label><input style={inp} type={type} value={val[key]} placeholder={ph} onChange={e=>set({...val,[key]:e.target.value})}/></div>);
+  const row2=(a,b)=><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>{a}{b}</div>;
+  const badge=(label,color)=><span style={{fontSize:11,fontWeight:500,padding:"2px 8px",borderRadius:20,background:`var(--color-background-${color})`,color:`var(--color-text-${color})`,border:`1px solid var(--color-border-${color})`}}>{label}</span>;
+
+  return(
+    <div style={{fontFamily:"var(--font-sans)",maxWidth:700,margin:"0 auto",padding:"12px 16px",color:"var(--color-text-primary)"}}>
+      {toast&&<div style={{position:"fixed",top:16,right:16,zIndex:999,padding:"10px 18px",borderRadius:10,fontSize:13,fontWeight:500,background:toast.type==="error"?"var(--color-background-danger)":"var(--color-background-success)",color:toast.type==="error"?"var(--color-text-danger)":"var(--color-text-success)",border:`1px solid var(--color-border-${toast.type==="error"?"danger":"success"})`,boxShadow:"0 2px 12px rgba(0,0,0,.12)"}}>{toast.msg}</div>}
+      {loading&&<div style={{position:"fixed",top:0,left:0,right:0,height:3,background:"var(--color-text-info)",zIndex:9999}}/>}
+
+      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
+        <div style={{width:34,height:34,borderRadius:8,background:"var(--color-background-info)",display:"flex",alignItems:"center",justifyContent:"center"}}><i className="ti ti-pill" style={{fontSize:18,color:"var(--color-text-info)"}}/></div>
+        <div><div style={{fontSize:16,fontWeight:500}}>PharmaSave</div><div style={{fontSize:12,color:"var(--color-text-secondary)"}}>Prescription Manager</div></div>
+        <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:10}}>
+          <div style={{textAlign:"right"}}><div style={{fontSize:13,fontWeight:500}}>{currentUser.name}</div><div style={{fontSize:11}}>{badge(RL[currentUser.role],RC[currentUser.role])}</div></div>
+          <button onClick={()=>{setCurrentUser(null);setTab(0);setSelPt(null);resetScan();setPatients([]);setScripts([]);}} style={{padding:"6px 12px",fontSize:12,borderRadius:8,border:"1px solid var(--color-border-secondary)",background:"var(--color-background-secondary)",color:"var(--color-text-secondary)",cursor:"pointer"}}>Sign out</button>
+        </div>
+      </div>
+
+      <div style={{display:"flex",gap:4,marginBottom:16,borderBottom:"1px solid var(--color-border-tertiary)"}}>
+        {TABS.map((t,i)=><button key={t} onClick={()=>{setTab(i);if(t!=="Upload Script")resetScan();}} style={{padding:"8px 12px",fontSize:13,fontWeight:tab===i?500:400,border:"none",borderBottom:tab===i?"2px solid var(--color-text-info)":"2px solid transparent",background:"transparent",color:tab===i?"var(--color-text-info)":"var(--color-text-secondary)",cursor:"pointer",marginBottom:-1}}>{t}</button>)}
+      </div>
+
+      {TABS[tab]==="Search"&&!selPt&&(<>
+        <div style={{position:"relative",marginBottom:14}}>
+          <i className="ti ti-search" style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",fontSize:16,color:"var(--color-text-tertiary)"}}/>
+          <input style={{...inp,paddingLeft:34}} placeholder="Search by name, patient ID, dispensing profile, SA ID or medical aid no…" value={search} onChange={e=>setSearch(e.target.value)} autoFocus/>
+        </div>
+        {!search&&<div style={{textAlign:"center",color:"var(--color-text-tertiary)",padding:"32px 0",fontSize:14}}>{patients.length===0&&loading?"Loading…":"Start typing to search."}</div>}
+        {filteredPts.map(p=><div key={p.id} onClick={async()=>{setSelPt(p);await loadScripts(p.id);}} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",border:"1px solid var(--color-border-tertiary)",borderRadius:10,marginBottom:8,cursor:"pointer",background:"var(--color-background-secondary)"}}>
+          <div style={{width:38,height:38,borderRadius:"50%",background:"var(--color-background-info)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><i className="ti ti-user" style={{fontSize:18,color:"var(--color-text-info)"}}/></div>
+          <div style={{flex:1,minWidth:0}}><div style={{fontWeight:500,fontSize:14}}>{fullName(p)}</div><div style={{fontSize:12,color:"var(--color-text-secondary)",marginTop:2}}>{p.id} · Disp: {p.disp_profile_no||"—"} · {p.aid_name||"No medical aid"}</div></div>
+          <i className="ti ti-chevron-right" style={{color:"var(--color-text-tertiary)"}}/>
+        </div>)}
+      </>)}
+
+      {TABS[tab]==="Search"&&selPt&&(<div>
+        <button onClick={()=>{setSelPt(null);setExpRx(null);setScripts([]);}} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",color:"var(--color-text-info)",cursor:"pointer",fontSize:13,padding:0,marginBottom:14}}><i className="ti ti-arrow-left"/> Back</button>
+        <div style={{background:"var(--color-background-secondary)",border:"1px solid var(--color-border-tertiary)",borderRadius:12,padding:"14px 16px",marginBottom:16}}>
+          <div style={{display:"flex",gap:12,alignItems:"flex-start",marginBottom:10}}>
+            <div style={{width:44,height:44,borderRadius:"50%",background:"var(--color-background-info)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><i className="ti ti-user" style={{fontSize:22,color:"var(--color-text-info)"}}/></div>
+            <div><div style={{fontSize:17,fontWeight:500}}>{fullName(selPt)}</div><div style={{fontSize:12,color:"var(--color-text-secondary)",marginTop:2}}>ID: {selPt.id} {selPt.disp_profile_no&&<span>· Dispensing profile: <strong>{selPt.disp_profile_no}</strong></span>}</div></div>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"5px 20px",fontSize:13}}>
+            {[["DOB",fmtDate(selPt.dob)],["SA ID",selPt.id_number],["Phone",selPt.phone],["Email",selPt.email],["Medical aid",selPt.aid_name],["Aid number",selPt.aid_number],["Dependant code",selPt.dependant_code],["Address",selPt.address],["Next of kin",selPt.nok_name?`${selPt.nok_name} · ${selPt.nok_phone}`:""]].filter(([,v])=>v).map(([l,v])=><div key={l}><span style={{color:"var(--color-text-tertiary)",fontSize:11}}>{l} </span><span>{v}</span></div>)}
+          </div>
+        </div>
+        <div style={{fontSize:13,fontWeight:500,marginBottom:10,color:"var(--color-text-secondary)"}}>{scripts.length} prescription{scripts.length!==1?"s":""} on file</div>
+        {scripts.length===0&&!loading&&<div style={{textAlign:"center",color:"var(--color-text-tertiary)",padding:"24px 0",fontSize:14}}>No scripts on file yet.</div>}
+        {scripts.map(rx=>{
+          const isOpen=expRx===rx.id;const isExpired=rx.valid_until&&new Date(rx.valid_until)<new Date();
+          return<div key={rx.id} style={{border:"1px solid var(--color-border-tertiary)",borderRadius:10,marginBottom:8,overflow:"hidden",background:"var(--color-background-primary)"}}>
+            <div onClick={()=>setExpRx(isOpen?null:rx.id)} style={{display:"flex",alignItems:"center",gap:12,padding:"11px 14px",curs
