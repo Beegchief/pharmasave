@@ -218,7 +218,8 @@ function DocScanner({imageSrc,onAccept,onRetake}){
   }
 
   return(
-    <div style={{background:"#111",minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",padding:"16px"}}>
+    return(
+    <div style={{background:"#111",minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",padding:"16px",overflowY:"auto"}}>
       <div style={{color:"#fff",fontSize:15,fontWeight:500,marginBottom:12,textAlign:"center"}}>
         {mode==="crop"?"Drag the corners to fit the document edges":"Looking good? Accept or retake."}
       </div>
