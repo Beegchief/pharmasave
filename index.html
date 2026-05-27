@@ -186,24 +186,7 @@ function DocScanner({imageSrc,onAccept,onRetake}){
       const out=document.createElement("canvas");
       out.width=Math.round(width);out.height=Math.round(height);
       const ctx=out.getContext("2d");
-      // Simple bilinear perspective mapping
-      for(let y=0;y<out.height;y++){
-        for(let x=0;x<out.width;x++){
-          const u=x/out.width,v=y/out.height;
-          const sx=((1-u)*(1-v)*tl.x+u*(1-v)*tr.x+u*v*br.x+(1-u)*v*bl.x);
-          const sy=((1-u)*(1-v)*tl.y+u*(1-v)*tr.y+u*v*br.y+(1-u)*v*bl.y);
-          ctx.drawImage(imgEl,sx,sy,1,1,x,y,1,1);
-        }
-      }
-      // Contrast enhancement
-      const id=ctx.getImageData(0,0,out.width,out.height);
-      const d=id.data;
-      for(let i=0;i<d.length;i+=4){
-        const gray=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2];
-        const enhanced=Math.min(255,Math.max(0,(gray-128)*1.4+148));
-        d[i]=d[i+1]=d[i+2]=enhanced;
-      }
-      ctx.putImageData(id,0,0);
+      ctx.drawImage(imgEl,tl.x,tl.y,tr.x-tl.x,bl.y-tl.y,0,0,out.width,out.height);
       setProcessed(out.toDataURL("image/jpeg",0.92));
       setMode("preview");
       setProcessing(false);
