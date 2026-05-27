@@ -632,7 +632,8 @@ function App(){
 
   return(
     <div style={{fontFamily:"var(--font-sans)",maxWidth:700,margin:"0 auto",padding:"12px 16px",color:"var(--color-text-primary)"}}>
-      {scannerImg&&<div style={{position:"fixed",inset:0,zIndex:2000}}><DocScanner imageSrc={scannerImg.src} onAccept={onScannerAccept} onRetake={onScannerRetake}/></div>}      {toast&&<div style={{position:"fixed",top:16,right:16,zIndex:999,padding:"10px 18px",borderRadius:10,fontSize:13,fontWeight:500,background:toast.type==="error"?"var(--color-background-danger)":"var(--color-background-success)",color:toast.type==="error"?"var(--color-text-danger)":"var(--color-text-success)",border:`1px solid var(--color-border-${toast.type==="error"?"danger":"success"})`,boxShadow:"0 2px 12px rgba(0,0,0,.12)"}}>{toast.msg}</div>}
+      {scannerImg&&<div style={{position:"fixed",inset:0,zIndex:2000}}><DocScanner imageSrc={scannerImg.src} onAccept={(file,preview)=>{if(scannerImg.target==="script"){setScannerImg({...scannerImg,scriptFile:file,scriptPreview:preview});setScannerImg(null);}else{setScannerImg({...scannerImg,trailerFile:file,trailerPreview:preview});setScannerImg(null);}}} onRetake={()=>setScannerImg(null)}/></div>}  
+{toast&&<div style={{position:"fixed",top:16,right:16,zIndex:999,padding:"10px 18px",borderRadius:10,fontSize:13,fontWeight:500,background:toast.type==="error"?"var(--color-background-danger)":"var(--color-background-success)",color:toast.type==="error"?"var(--color-text-danger)":"var(--color-text-success)",border:`1px solid var(--color-border-${toast.type==="error"?"danger":"success"})`,boxShadow:"0 2px 12px rgba(0,0,0,.12)"}}>{toast.msg}</div>}
       {loading&&<div style={{position:"fixed",top:0,left:0,right:0,height:3,background:"var(--color-text-info)",zIndex:9999}}/>}
       {editRx&&<EditScriptModal rx={editRx} onSave={saveEditedScript} onClose={()=>setEditRx(null)}/>}
 
