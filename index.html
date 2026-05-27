@@ -88,6 +88,167 @@ function genPtId(pts){const n=pts.map(p=>parseInt((p.id||"PT0").replace("PT","")
 function genRxId(date){return`RX-${date.replace(/-/g,"")}-${String(Math.floor(Math.random()*900)+100)}`;}
 async function toBase64(file){return new Promise(res=>{const r=new FileReader();r.onload=()=>res(r.result.split(",")[1]);r.readAsDataURL(file);});}
 
+// ── Document scanner: perspective crop + contrast enhance ──
+function DocScanner({imageSrc,onAccept,onRetake}){
+  const canvasRef=useRef();
+  const[corners,setCorners]=useState(null);
+  const[dragging,setDragging]=useState(null);
+  const[imgEl,setImgEl]=useState(null);
+  const[processed,setProcessed]=useState(null);
+  const[processing,setProcessing]=useState(false);
+  const[mode,setMode]=useState("crop"); // crop | preview
+
+  useEffect(()=>{
+    const img=new Image();
+    img.onload=()=>{
+      setImgEl(img);
+      const w=img.naturalWidth,h=img.naturalHeight;
+      const pad=0.05;
+      setCorners([
+        {x:pad*w,y:pad*h},
+        {x:(1-pad)*w,y:pad*h},
+        {x:(1-pad)*w,y:(1-pad)*h},
+        {x:pad*w,y:(1-pad)*h}
+      ]);
+    };
+    img.src=imageSrc;
+  },[imageSrc]);
+
+  useEffect(()=>{
+    if(!imgEl||!corners||mode!=="crop")return;
+    const canvas=canvasRef.current;
+    if(!canvas)return;
+    const maxW=Math.min(window.innerWidth-32,600);
+    const scale=maxW/imgEl.naturalWidth;
+    canvas.width=maxW;
+    canvas.height=imgEl.naturalHeight*scale;
+    const ctx=canvas.getContext("2d");
+    ctx.drawImage(imgEl,0,0,canvas.width,canvas.height);
+    // overlay
+    ctx.fillStyle="rgba(0,0,0,0.45)";
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    // crop area
+    const sc=corners.map(c=>({x:c.x*scale,y:c.y*scale}));
+    ctx.beginPath();
+    ctx.moveTo(sc[0].x,sc[0].y);
+    sc.forEach(c=>ctx.lineTo(c.x,c.y));
+    ctx.closePath();
+    ctx.fillStyle="rgba(37,99,235,0.15)";
+    ctx.fill();
+    ctx.strokeStyle="#2563eb";ctx.lineWidth=2;ctx.stroke();
+    // handles
+    sc.forEach((c,i)=>{
+      ctx.beginPath();ctx.arc(c.x,c.y,14,0,Math.PI*2);
+      ctx.fillStyle="#2563eb";ctx.fill();
+      ctx.fillStyle="#fff";ctx.font="bold 11px sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";
+      ctx.fillText(i+1,c.x,c.y);
+    });
+  },[imgEl,corners,mode]);
+
+  function getCanvasPos(e,canvas){
+    const rect=canvas.getBoundingClientRect();
+    const clientX=e.touches?e.touches[0].clientX:e.clientX;
+    const clientY=e.touches?e.touches[0].clientY:e.clientY;
+    const scaleX=canvas.width/rect.width;
+    const scaleY=canvas.height/rect.height;
+    return{x:(clientX-rect.left)*scaleX,y:(clientY-rect.top)*scaleY};
+  }
+
+  function startDrag(e){
+    e.preventDefault();
+    const canvas=canvasRef.current;
+    const maxW=Math.min(window.innerWidth-32,600);
+    const scale=maxW/imgEl.naturalWidth;
+    const pos=getCanvasPos(e,canvas);
+    const sc=corners.map(c=>({x:c.x*scale,y:c.y*scale}));
+    const hit=sc.findIndex(c=>Math.hypot(c.x-pos.x,c.y-pos.y)<24);
+    if(hit>=0)setDragging(hit);
+  }
+  function moveDrag(e){
+    e.preventDefault();
+    if(dragging===null)return;
+    const canvas=canvasRef.current;
+    const maxW=Math.min(window.innerWidth-32,600);
+    const scale=maxW/imgEl.naturalWidth;
+    const pos=getCanvasPos(e,canvas);
+    const newCorners=[...corners];
+    newCorners[dragging]={x:Math.max(0,Math.min(imgEl.naturalWidth,pos.x/scale)),y:Math.max(0,Math.min(imgEl.naturalHeight,pos.y/scale))};
+    setCorners(newCorners);
+  }
+  function endDrag(){setDragging(null);}
+
+  function applyTransform(){
+    setProcessing(true);
+    setTimeout(()=>{
+      const[tl,tr,br,bl]=corners;
+      const width=Math.max(Math.hypot(tr.x-tl.x,tr.y-tl.y),Math.hypot(br.x-bl.x,br.y-bl.y));
+      const height=Math.max(Math.hypot(bl.x-tl.x,bl.y-tl.y),Math.hypot(br.x-tr.x,br.y-tr.y));
+      const out=document.createElement("canvas");
+      out.width=Math.round(width);out.height=Math.round(height);
+      const ctx=out.getContext("2d");
+      // Simple bilinear perspective mapping
+      for(let y=0;y<out.height;y++){
+        for(let x=0;x<out.width;x++){
+          const u=x/out.width,v=y/out.height;
+          const sx=((1-u)*(1-v)*tl.x+u*(1-v)*tr.x+u*v*br.x+(1-u)*v*bl.x);
+          const sy=((1-u)*(1-v)*tl.y+u*(1-v)*tr.y+u*v*br.y+(1-u)*v*bl.y);
+          ctx.drawImage(imgEl,sx,sy,1,1,x,y,1,1);
+        }
+      }
+      // Contrast enhancement
+      const id=ctx.getImageData(0,0,out.width,out.height);
+      const d=id.data;
+      for(let i=0;i<d.length;i+=4){
+        const gray=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2];
+        const enhanced=Math.min(255,Math.max(0,(gray-128)*1.4+148));
+        d[i]=d[i+1]=d[i+2]=enhanced;
+      }
+      ctx.putImageData(id,0,0);
+      setProcessed(out.toDataURL("image/jpeg",0.92));
+      setMode("preview");
+      setProcessing(false);
+    },50);
+  }
+
+  function acceptScan(){
+    fetch(processed).then(r=>r.blob()).then(blob=>{
+      const file=new File([blob],"scan.jpg",{type:"image/jpeg"});
+      onAccept(file,processed);
+    });
+  }
+
+  return(
+    <div style={{background:"#111",minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",padding:"16px"}}>
+      <div style={{color:"#fff",fontSize:15,fontWeight:500,marginBottom:12,textAlign:"center"}}>
+        {mode==="crop"?"Drag the corners to fit the document edges":"Looking good? Accept or retake."}
+      </div>
+
+      {mode==="crop"&&<>
+        <canvas ref={canvasRef}
+          style={{maxWidth:"100%",borderRadius:8,touchAction:"none",cursor:"crosshair"}}
+          onMouseDown={startDrag} onMouseMove={moveDrag} onMouseUp={endDrag}
+          onTouchStart={startDrag} onTouchMove={moveDrag} onTouchEnd={endDrag}/>
+        <div style={{display:"flex",gap:10,marginTop:16,width:"100%",maxWidth:400}}>
+          <button onClick={onRetake} style={{flex:1,padding:"12px",fontSize:14,borderRadius:10,border:"1px solid rgba(255,255,255,.3)",background:"rgba(255,255,255,.1)",color:"#fff",cursor:"pointer"}}>Retake</button>
+          <button onClick={applyTransform} disabled={processing} style={{flex:2,padding:"12px",fontSize:14,fontWeight:500,borderRadius:10,border:"none",background:"#2563eb",color:"#fff",cursor:"pointer",opacity:processing?.6:1}}>
+            {processing?<span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><span style={{width:16,height:16,border:"2px solid rgba(255,255,255,.4)",borderTopColor:"#fff",borderRadius:"50%",display:"inline-block",animation:"spin .8s linear infinite"}}/> Processing…</span>:"Apply crop &amp; enhance"}
+          </button>
+        </div>
+        <div style={{color:"rgba(255,255,255,.4)",fontSize:12,marginTop:10,textAlign:"center"}}>Tip: pinch to zoom the page if you need more precision</div>
+      </>}
+
+      {mode==="preview"&&processed&&<>
+        <img src={processed} style={{maxWidth:"100%",borderRadius:8,boxShadow:"0 4px 24px rgba(0,0,0,.5)"}}/>
+        <div style={{display:"flex",gap:10,marginTop:16,width:"100%",maxWidth:400}}>
+          <button onClick={()=>setMode("crop")} style={{flex:1,padding:"12px",fontSize:14,borderRadius:10,border:"1px solid rgba(255,255,255,.3)",background:"rgba(255,255,255,.1)",color:"#fff",cursor:"pointer"}}>Re-crop</button>
+          <button onClick={onRetake} style={{flex:1,padding:"12px",fontSize:14,borderRadius:10,border:"1px solid rgba(255,255,255,.3)",background:"rgba(255,255,255,.1)",color:"#fff",cursor:"pointer"}}>Retake</button>
+          <button onClick={acceptScan} style={{flex:2,padding:"12px",fontSize:14,fontWeight:500,borderRadius:10,border:"none",background:"#16a34a",color:"#fff",cursor:"pointer"}}>Use this scan</button>
+        </div>
+      </>}
+    </div>
+  );
+}
+
 const emptyPt={disp_profile_no:"",first_name:"",surname:"",dob:"",id_number:"",phone:"",email:"",address:"",aid_name:"",aid_number:"",dependant_code:"",nok_name:"",nok_phone:""};
 const emptyRx={patientId:"",script_date:new Date().toISOString().slice(0,10),valid_until:"",doctor:"",practice_no:"",items:"",diagnosis:"",repeats:"",is_chronic:false,changes:"",dispensed_by_name:"",total_price:"",trailerFile:null,scriptFile:null,trailerPreview:null,scriptPreview:null};
 
@@ -253,6 +414,7 @@ function UploadScriptPanel({currentUser,patients,selPtId,onSaved,onAudit,compact
   const[scanStep,setScanStep]=useState("idle");
   const[loading,setLoading]=useState(false);
   const[toast,setToast]=useState(null);
+  const[scannerImg,setScannerImg]=useState(null); // {src, target: "script"|"trailer"}
   const trailerRef=useRef();
   const scriptRef=useRef();
 
@@ -266,21 +428,34 @@ function UploadScriptPanel({currentUser,patients,selPtId,onSaved,onAudit,compact
   function showToast(msg,type="success"){setToast({msg,type});setTimeout(()=>setToast(null),3500);}
   function resetScan(){setScanStep("idle");setNewRx({...emptyRx,patientId:selPtId||""});setPtSearch(selPtId?(()=>{const pt=patients.find(p=>p.id===selPtId);return pt?`${fullName(pt)} (${pt.id})`:""})():"");}
 
-  async function onScriptPhoto(file){if(!file)return;setNewRx(r=>({...r,scriptFile:file,scriptPreview:URL.createObjectURL(file)}));setScanStep("scanning_script");}
+  async function onScriptPhoto(file){
+    if(!file)return;
+    setScannerImg({src:URL.createObjectURL(file),target:"script"});
+  }
   async function onTrailerPhoto(file){
     if(!file)return;
-    const preview=URL.createObjectURL(file);
-    setNewRx(r=>({...r,trailerFile:file,trailerPreview:preview}));
-    setScanStep("parsing");
-    try{
-      const b64=await toBase64(file);
-      const parsed=await parseTrailerLabel(b64);
-      const matched=selPtId?patients.find(p=>p.id===selPtId):patients.find(p=>parsed.patientSurname&&p.surname.toLowerCase().includes(parsed.patientSurname.toLowerCase()));
-      setNewRx(r=>({...r,patientId:matched?matched.id:"",script_date:parsed.scriptDate||r.script_date,items:parsed.medications||"",dispensed_by_name:parsed.dispenserName||currentUser.name,total_price:parsed.totalPrice||"",doctor:parsed.doctor||""}));
-      if(!selPtId)setPtSearch(matched?`${fullName(matched)} (${matched.id})`:(parsed.patientSurname||""));
-      setScanStep("verify");
-    }catch(e){showToast("Could not read label — fill in manually","error");setScanStep("verify");}
+    setScannerImg({src:URL.createObjectURL(file),target:"trailer"});
   }
+  function onScannerAccept(file,preview){
+    if(scannerImg.target==="script"){
+      setNewRx(r=>({...r,scriptFile:file,scriptPreview:preview}));
+      setScanStep("scanning_script");
+    } else {
+      setNewRx(r=>({...r,trailerFile:file,trailerPreview:preview}));
+      setScanStep("parsing");
+      setScannerImg(null);
+      // trigger parse
+      toBase64(file).then(b64=>parseTrailerLabel(b64)).then(parsed=>{
+        const matched=selPtId?patients.find(p=>p.id===selPtId):patients.find(p=>parsed.patientSurname&&p.surname.toLowerCase().includes(parsed.patientSurname.toLowerCase()));
+        setNewRx(r=>({...r,patientId:matched?matched.id:"",script_date:parsed.scriptDate||r.script_date,items:parsed.medications||"",dispensed_by_name:parsed.dispenserName||currentUser.name,total_price:parsed.totalPrice||"",doctor:parsed.doctor||""}));
+        if(!selPtId)setPtSearch(matched?`${fullName(matched)} (${matched.id})`:(parsed.patientSurname||""));
+        setScanStep("verify");
+      }).catch(()=>{showToast("Could not read label — fill in manually","error");setScanStep("verify");});
+      return;
+    }
+    setScannerImg(null);
+  }
+  function onScannerRetake(){setScannerImg(null);}
 
   async function addScript(){
     if(!newRx.patientId)return showToast("Patient not matched","error");
@@ -457,7 +632,7 @@ function App(){
 
   return(
     <div style={{fontFamily:"var(--font-sans)",maxWidth:700,margin:"0 auto",padding:"12px 16px",color:"var(--color-text-primary)"}}>
-      {toast&&<div style={{position:"fixed",top:16,right:16,zIndex:999,padding:"10px 18px",borderRadius:10,fontSize:13,fontWeight:500,background:toast.type==="error"?"var(--color-background-danger)":"var(--color-background-success)",color:toast.type==="error"?"var(--color-text-danger)":"var(--color-text-success)",border:`1px solid var(--color-border-${toast.type==="error"?"danger":"success"})`,boxShadow:"0 2px 12px rgba(0,0,0,.12)"}}>{toast.msg}</div>}
+      {scannerImg&&<div style={{position:"fixed",inset:0,zIndex:2000}}><DocScanner imageSrc={scannerImg.src} onAccept={onScannerAccept} onRetake={onScannerRetake}/></div>}      {toast&&<div style={{position:"fixed",top:16,right:16,zIndex:999,padding:"10px 18px",borderRadius:10,fontSize:13,fontWeight:500,background:toast.type==="error"?"var(--color-background-danger)":"var(--color-background-success)",color:toast.type==="error"?"var(--color-text-danger)":"var(--color-text-success)",border:`1px solid var(--color-border-${toast.type==="error"?"danger":"success"})`,boxShadow:"0 2px 12px rgba(0,0,0,.12)"}}>{toast.msg}</div>}
       {loading&&<div style={{position:"fixed",top:0,left:0,right:0,height:3,background:"var(--color-text-info)",zIndex:9999}}/>}
       {editRx&&<EditScriptModal rx={editRx} onSave={saveEditedScript} onClose={()=>setEditRx(null)}/>}
 
