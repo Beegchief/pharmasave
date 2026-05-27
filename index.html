@@ -414,7 +414,6 @@ function UploadScriptPanel({currentUser,patients,selPtId,onSaved,onAudit,compact
   const[scanStep,setScanStep]=useState("idle");
   const[loading,setLoading]=useState(false);
   const[toast,setToast]=useState(null);
-  const[scannerImg,setScannerImg]=useState(null); // {src, target: "script"|"trailer"}
   const trailerRef=useRef();
   const scriptRef=useRef();
 
@@ -578,6 +577,7 @@ function App(){
   const[toast,setToast]=useState(null);
   const[editRx,setEditRx]=useState(null);
   const[showUploadInProfile,setShowUploadInProfile]=useState(false);
+  const[scannerImg,setScannerImg]=useState(null);
 
   useEffect(()=>{if(currentUser)loadPatients();},[currentUser]);
 
