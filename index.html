@@ -151,7 +151,7 @@ function ScriptImages({scriptPath,trailerPath,rxId,patientName}){
         </div>
       </div>
       {shareOpen===label&&(
-        <div style={{padding:"8px",background:"var(--color-background-primary)",borderBottom:"1px solid var(--color-border-tertiary)",display:"flex",gap:6"}}>
+        <div style={{padding:"8px",background:"var(--color-background-primary)",borderBottom:"1px solid var(--color-border-tertiary)",display:"flex",gap:6}}>
           <button onClick={()=>{whatsapp(url);setShareOpen(null);}} style={{flex:1,padding:"7px",fontSize:12,fontWeight:500,borderRadius:7,border:"1px solid #25d366",background:"#e7fbe9",color:"#128c3e",cursor:"pointer"}}><i className="ti ti-brand-whatsapp"/> WhatsApp</button>
           <button onClick={()=>{email(url);setShareOpen(null);}} style={{flex:1,padding:"7px",fontSize:12,fontWeight:500,borderRadius:7,border:"1px solid var(--color-border-info)",background:"var(--color-background-info)",color:"var(--color-text-info)",cursor:"pointer"}}><i className="ti ti-mail"/> Email</button>
         </div>
