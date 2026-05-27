@@ -128,17 +128,34 @@ function ScriptImages({scriptPath,trailerPath,rxId,patientName}){
   },[]);
 
   async function downloadImg(url,label){
-    const res=await fetch(url);const blob=await res.blob();
-    const a=document.createElement("a");a.href=URL.createObjectURL(blob);
-    a.download=`${rxId}_${label.replace(/\s+/g,"_")}.jpg`;a.click();
+    try{
+      const res=await fetch(url);const blob=await res.blob();
+      const a=document.createElement("a");a.href=URL.createObjectURL(blob);
+      a.download=rxId+"_"+label.replace(/\s+/g,"_")+".jpg";
+      document.body.appendChild(a);a.click();document.body.removeChild(a);
+    }catch(e){window.open(url,"_blank");}
   }
   function printImg(url){
-    const w=window.open("","_blank");
-    w.document.write(`<html><body style="margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh"><img src="${url}" style="max-width:100%;max-height:100vh"/></body></html>`);
-    w.document.close();w.onload=()=>{w.focus();w.print();};
+    const iframe=document.createElement("iframe");
+    iframe.style.cssText="position:fixed;top:-9999px;left:-9999px;width:800px;height:600px;border:none";
+    iframe.onload=()=>{
+      try{iframe.contentWindow.focus();iframe.contentWindow.print();}
+      catch(e){window.open(url,"_blank");}
+      setTimeout(()=>document.body.removeChild(iframe),2000);
+    };
+    iframe.src=url;document.body.appendChild(iframe);
   }
-  function whatsapp(url){const msg=encodeURIComponent("Prescription "+rxId+" for "+patientName+": "+url);window.open("https://wa.me/?text="+msg);}
-  function email(url){const subj=encodeURIComponent("Prescription "+rxId+" – "+patientName);const body=encodeURIComponent("Please find prescription "+rxId+" for "+patientName+" here:\n\n"+url);window.open("mailto:?subject="+subj+"&body="+body);}
+  function whatsapp(url){
+    const a=document.createElement("a");
+    a.href="https://wa.me/?text="+encodeURIComponent("Prescription "+rxId+" for "+patientName+": "+url);
+    a.target="_blank";a.rel="noopener noreferrer";
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+  }
+  function email(url){
+    const a=document.createElement("a");
+    a.href="mailto:?subject="+encodeURIComponent("Prescription "+rxId)+"&body="+encodeURIComponent("Prescription "+rxId+" for "+patientName+":\n\n"+url);
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+  }
 
   const imgCard=(url,label)=>!url?null:(
     <div style={{borderRadius:8,overflow:"hidden",border:"1px solid var(--color-border-tertiary)"}}>
