@@ -408,7 +408,7 @@ function EditScriptModal({rx,onSave,onClose}){
 }
 
 // ── Upload Script panel (reusable in patient profile) ──
-function UploadScriptPanel({currentUser,patients,selPtId,onSaved,onAudit,compact=false}){
+function UploadScriptPanel({currentUser,patients,selPtId,onSaved,onAudit,compact=false,setScannerImg}){
   const[newRx,setNewRx]=useState({...emptyRx,patientId:selPtId||""});
   const[ptSearch,setPtSearch]=useState("");
   const[scanStep,setScanStep]=useState("idle");
@@ -689,7 +689,7 @@ function App(){
                 <div style={{fontSize:14,fontWeight:500}}>New prescription for {selPt.first_name}</div>
                 <button onClick={()=>setShowUploadInProfile(false)} style={{background:"none",border:"none",fontSize:18,cursor:"pointer",color:"var(--color-text-secondary)"}}><i className="ti ti-x"/></button>
               </div>
-              <UploadScriptPanel currentUser={currentUser} patients={patients} selPtId={selPt.id} onSaved={handleScriptSaved} onAudit={auditLog} compact={true}/>
+              <UploadScriptPanel currentUser={currentUser} patients={patients} selPtId={selPt.id} onSaved={handleScriptSaved} onAudit={auditLog} compact={true} setScannerImg={setScannerImg}/>
             </div>
           }
         </div>}
@@ -739,7 +739,7 @@ function App(){
       </div>}
 
       {/* ── UPLOAD SCRIPT TAB ── */}
-      {TABS[tab]==="Upload Script"&&<UploadScriptPanel currentUser={currentUser} patients={patients} selPtId={null} onSaved={rx=>{showToast(`Script ${rx.id} saved`);setTab(0);}} onAudit={auditLog}/>}
+      {TABS[tab]==="Upload Script"&&<UploadScriptPanel currentUser={currentUser} patients={patients} selPtId={null} onSaved={rx=>{showToast("Script "+rx.id+" saved");setTab(0);}} onAudit={auditLog} setScannerImg={setScannerImg}/>}
 
       {/* ── STAFF ── */}
       {TABS[tab]==="Staff"&&<div>
