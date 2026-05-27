@@ -193,11 +193,14 @@ function DocScanner({imageSrc,onAccept,onRetake}){
     },50);
   }
 
-  function acceptScan(){
-    fetch(processed).then(r=>r.blob()).then(blob=>{
-      const file=new File([blob],"scan.jpg",{type:"image/jpeg"});
-      onAccept(file,processed);
-    });
+ function acceptScan(){
+    try{
+      fetch(processed).then(r=>r.blob()).then(blob=>{
+        const file=new File([blob],"scan.jpg",{type:"image/jpeg"});
+        console.log("Calling onAccept with file and preview");
+        onAccept(file,processed);
+      }).catch(e=>console.error("Fetch error:",e));
+    }catch(e){console.error("acceptScan error:",e);}
   }
 
  return(
