@@ -521,6 +521,7 @@ function App(){
   // Scanner state lives here and is passed down
   const[scannerOpen,setScannerOpen]=useState(false);
   const[pendingScan,setPendingScan]=useState(null);
+  const[rawImg,setRawImg]=useState(null);
   const fileRef=useRef();
 
   useEffect(()=>{if(currentUser)loadPatients();},[currentUser]);
@@ -528,11 +529,12 @@ function App(){
   async function loadScripts(pid){try{const data=await sb.query("prescriptions","GET",null,"?patient_id=eq."+pid+"&order=script_date.desc");setScripts(data||[]);}catch(e){showToast("Could not load scripts","error");}}
   async function auditLog(action,detail){try{await sb.query("audit_log","POST",{staff_name:currentUser.name,staff_id:currentUser.id,action,detail});}catch(e){}}
 
-  if(!currentUser)return React.createElement(LoginScreen,{onLogin:setCurrentUser});
-  const TABS=["Search",can(currentUser,"addPatient")&&"Add Patient",can(currentUser,"upload")&&"Upload Script",currentUser.role==="admin"&&"Staff"].filter(Boolean);
+  const TABS=currentUser?["Search",can(currentUser,"addPatient")&&"Add Patient",can(currentUser,"upload")&&"Upload Script",currentUser.role==="admin"&&"Staff"].filter(Boolean):[];
   function showToast(msg,type="success"){setToast({msg,type});setTimeout(()=>setToast(null),3500);}
 
   const filteredPts=patients.filter(p=>{const q=search.toLowerCase();return fullName(p).toLowerCase().includes(q)||p.id?.toLowerCase().includes(q)||p.disp_profile_no?.toLowerCase().includes(q)||p.aid_number?.toLowerCase().includes(q)||p.id_number?.includes(q);});
+
+  if(!currentUser)return React.createElement(LoginScreen,{onLogin:setCurrentUser});
 
   async function addPatient(){
     const np=newPt;
@@ -546,7 +548,6 @@ function App(){
   function handleScriptSaved(rx){setScripts(s=>[rx,...s]);setShowUploadInProfile(false);showToast("Script "+rx.id+" saved");}
 
   // Camera: open file input, on change open DocScanner
-  const[rawImg,setRawImg]=useState(null);
   function requestScan(){fileRef.current.value="";fileRef.current.click();}
   function onFileChange(e){const f=e.target.files[0];if(f)setRawImg(URL.createObjectURL(f));}
   function onScannerAccept(file,preview){setRawImg(null);setPendingScan({file,preview});}
