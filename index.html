@@ -30,34 +30,35 @@
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const {useState,useRef,useEffect}=React;
+const {useState,useRef,useEffect,useCallback}=React;
 
 const SB_URL="https://zqputthzhuskzqonnvox.supabase.co";
 const SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpxcHV0dGh6aHVza3pxb25udm94Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyMjkyMjgsImV4cCI6MjA5NDgwNTIyOH0.UslOXizMcv83_dJUlrvf36oBiKKHU_Z9-s1e1VJCePg";
 
 const sb={
   async query(table,method="GET",body=null,filters=""){
-    const res=await fetch(`${SB_URL}/rest/v1/${table}${filters}`,{
-      method,headers:{"apikey":SB_KEY,"Authorization":`Bearer ${SB_KEY}`,"Content-Type":"application/json","Prefer":method==="POST"?"return=representation":method==="PATCH"?"return=representation":""},
+    const res=await fetch(SB_URL+"/rest/v1/"+table+filters,{
+      method,
+      headers:{"apikey":SB_KEY,"Authorization":"Bearer "+SB_KEY,"Content-Type":"application/json","Prefer":method==="POST"||method==="PATCH"?"return=representation":""},
       body:body?JSON.stringify(body):null
     });
     if(!res.ok){const e=await res.text();throw new Error(e);}
     return res.status===204?null:res.json();
   },
   async uploadFile(path,file){
-    const res=await fetch(`${SB_URL}/storage/v1/object/scripts/${path}`,{
-      method:"POST",headers:{"apikey":SB_KEY,"Authorization":`Bearer ${SB_KEY}`,"Content-Type":file.type},body:file
+    const res=await fetch(SB_URL+"/storage/v1/object/scripts/"+path,{
+      method:"POST",headers:{"apikey":SB_KEY,"Authorization":"Bearer "+SB_KEY,"Content-Type":file.type},body:file
     });
     if(!res.ok)throw new Error(await res.text());
   },
   async signedUrl(path){
-    const res=await fetch(`${SB_URL}/storage/v1/object/sign/scripts/${path}`,{
-      method:"POST",headers:{"apikey":SB_KEY,"Authorization":`Bearer ${SB_KEY}`,"Content-Type":"application/json"},
+    const res=await fetch(SB_URL+"/storage/v1/object/sign/scripts/"+path,{
+      method:"POST",headers:{"apikey":SB_KEY,"Authorization":"Bearer "+SB_KEY,"Content-Type":"application/json"},
       body:JSON.stringify({expiresIn:3600})
     });
     if(!res.ok)return null;
     const data=await res.json();
-    return `${SB_URL}/storage/v1${data.signedURL}`;
+    return SB_URL+"/storage/v1"+data.signedURL;
   }
 };
 
@@ -82,13 +83,33 @@ function getPin(s){return s.role==="locum"?dailyPin(s.id):s.pin;}
 const RC={admin:"purple",dispenser:"teal",locum:"amber"};
 const RL={admin:"Admin",dispenser:"Dispenser",locum:"Locum"};
 function can(u,a){if(!u)return false;const r=u.role;if(r==="admin")return true;if(a==="upload"||a==="search")return true;if((a==="addPatient"||a==="editRecord")&&r==="dispenser")return true;return false;}
-function fmtDate(d){if(!d)return"—";const[y,m,day]=d.split("-");return`${day}/${m}/${y}`;}
-function fullName(p){return`${p.first_name} ${p.surname}`;}
+function fmtDate(d){if(!d)return"—";const[y,m,day]=d.split("-");return day+"/"+m+"/"+y;}
+function fullName(p){return p.first_name+" "+p.surname;}
 function genPtId(pts){const n=pts.map(p=>parseInt((p.id||"PT0").replace("PT",""),10)).filter(Boolean);return"PT"+String((n.length?Math.max(...n):0)+1).padStart(3,"0");}
-function genRxId(date){return`RX-${date.replace(/-/g,"")}-${String(Math.floor(Math.random()*900)+100)}`;}
-async function toBase64(file){return new Promise(res=>{const r=new FileReader();r.onload=()=>res(r.result.split(",")[1]);r.readAsDataURL(file);});}
+function genRxId(date){return"RX-"+date.replace(/-/g,"")+"-"+String(Math.floor(Math.random()*900)+100);}
+function toBase64(file){return new Promise(res=>{const r=new FileReader();r.onload=()=>res(r.result.split(",")[1]);r.readAsDataURL(file);});}
 
-// ── Document scanner: perspective crop + contrast enhance ──
+async function parseTrailerLabel(b64){
+  const res=await fetch("https://api.anthropic.com/v1/messages",{
+    method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,messages:[{role:"user",content:[
+      {type:"image",source:{type:"base64",media_type:"image/jpeg",data:b64}},
+      {type:"text",text:"South African pharmacy trailer label sticker. Extract info, return ONLY JSON: {\"patientSurname\":string,\"patientFirstName\":string|null,\"dispenserName\":string|null,\"medications\":string,\"scriptDate\":string|null,\"totalPrice\":string|null,\"doctor\":string|null} Date: YYYY-MM-DD. Medications comma-separated with qty and strength. ONLY JSON."}
+    ]}]})
+  });
+  const data=await res.json();
+  const text=(data.content||[]).find(b=>b.type==="text")?.text||"{}";
+  return JSON.parse(text.replace(/```json|```/g,"").trim());
+}
+
+const inp={width:"100%",padding:"8px 10px",fontSize:14,border:"1px solid var(--color-border-secondary)",borderRadius:8,background:"var(--color-background-primary)",color:"var(--color-text-primary)",boxSizing:"border-box",outline:"none"};
+const lbl={fontSize:12,color:"var(--color-text-secondary)",marginBottom:3,display:"block"};
+const sec=t=><div style={{fontSize:11,fontWeight:500,color:"var(--color-text-tertiary)",textTransform:"uppercase",letterSpacing:"0.06em",margin:"14px 0 8px",borderBottom:"1px solid var(--color-border-tertiary)",paddingBottom:4}}>{t}</div>;
+const fld=(label,key,val,set,type="text",ph="",req=false)=>(<div style={{marginBottom:10}}><label style={lbl}>{label}{req&&<span style={{color:"var(--color-text-danger)"}}> *</span>}</label><input style={inp} type={type} value={val[key]||""} placeholder={ph} onChange={e=>set(v=>({...v,[key]:e.target.value}))}/></div>);
+const row2=(a,b)=><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>{a}{b}</div>;
+const badge=(label,color)=><span style={{fontSize:11,fontWeight:500,padding:"2px 8px",borderRadius:20,background:"var(--color-background-"+color+")",color:"var(--color-text-"+color+")",border:"1px solid var(--color-border-"+color+")"}}>{label}</span>;
+
+// ── DocScanner ──
 function DocScanner({imageSrc,onAccept,onRetake}){
   const canvasRef=useRef();
   const[corners,setCorners]=useState(null);
@@ -96,47 +117,32 @@ function DocScanner({imageSrc,onAccept,onRetake}){
   const[imgEl,setImgEl]=useState(null);
   const[processed,setProcessed]=useState(null);
   const[processing,setProcessing]=useState(false);
-  const[mode,setMode]=useState("crop"); // crop | preview
+  const[mode,setMode]=useState("crop");
 
   useEffect(()=>{
     const img=new Image();
     img.onload=()=>{
       setImgEl(img);
-      const w=img.naturalWidth,h=img.naturalHeight;
-      const pad=0.05;
-      setCorners([
-        {x:pad*w,y:pad*h},
-        {x:(1-pad)*w,y:pad*h},
-        {x:(1-pad)*w,y:(1-pad)*h},
-        {x:pad*w,y:(1-pad)*h}
-      ]);
+      const w=img.naturalWidth,h=img.naturalHeight,p=0.05;
+      setCorners([{x:p*w,y:p*h},{x:(1-p)*w,y:p*h},{x:(1-p)*w,y:(1-p)*h},{x:p*w,y:(1-p)*h}]);
     };
     img.src=imageSrc;
   },[imageSrc]);
 
   useEffect(()=>{
     if(!imgEl||!corners||mode!=="crop")return;
-    const canvas=canvasRef.current;
-    if(!canvas)return;
+    const canvas=canvasRef.current;if(!canvas)return;
     const maxW=Math.min(window.innerWidth-32,600);
     const scale=maxW/imgEl.naturalWidth;
-    canvas.width=maxW;
-    canvas.height=imgEl.naturalHeight*scale;
+    canvas.width=maxW;canvas.height=imgEl.naturalHeight*scale;
     const ctx=canvas.getContext("2d");
     ctx.drawImage(imgEl,0,0,canvas.width,canvas.height);
-    // overlay
-    ctx.fillStyle="rgba(0,0,0,0.45)";
-    ctx.fillRect(0,0,canvas.width,canvas.height);
-    // crop area
+    ctx.fillStyle="rgba(0,0,0,0.45)";ctx.fillRect(0,0,canvas.width,canvas.height);
     const sc=corners.map(c=>({x:c.x*scale,y:c.y*scale}));
-    ctx.beginPath();
-    ctx.moveTo(sc[0].x,sc[0].y);
-    sc.forEach(c=>ctx.lineTo(c.x,c.y));
-    ctx.closePath();
-    ctx.fillStyle="rgba(37,99,235,0.15)";
-    ctx.fill();
+    ctx.beginPath();ctx.moveTo(sc[0].x,sc[0].y);
+    sc.forEach(c=>ctx.lineTo(c.x,c.y));ctx.closePath();
+    ctx.fillStyle="rgba(37,99,235,0.15)";ctx.fill();
     ctx.strokeStyle="#2563eb";ctx.lineWidth=2;ctx.stroke();
-    // handles
     sc.forEach((c,i)=>{
       ctx.beginPath();ctx.arc(c.x,c.y,14,0,Math.PI*2);
       ctx.fillStyle="#2563eb";ctx.fill();
@@ -145,35 +151,27 @@ function DocScanner({imageSrc,onAccept,onRetake}){
     });
   },[imgEl,corners,mode]);
 
-  function getCanvasPos(e,canvas){
+  function getPos(e,canvas){
     const rect=canvas.getBoundingClientRect();
-    const clientX=e.touches?e.touches[0].clientX:e.clientX;
-    const clientY=e.touches?e.touches[0].clientY:e.clientY;
-    const scaleX=canvas.width/rect.width;
-    const scaleY=canvas.height/rect.height;
-    return{x:(clientX-rect.left)*scaleX,y:(clientY-rect.top)*scaleY};
+    const cx=e.touches?e.touches[0].clientX:e.clientX;
+    const cy=e.touches?e.touches[0].clientY:e.clientY;
+    return{x:(cx-rect.left)*(canvas.width/rect.width),y:(cy-rect.top)*(canvas.height/rect.height)};
   }
-
   function startDrag(e){
     e.preventDefault();
     const canvas=canvasRef.current;
-    const maxW=Math.min(window.innerWidth-32,600);
-    const scale=maxW/imgEl.naturalWidth;
-    const pos=getCanvasPos(e,canvas);
+    const scale=Math.min(window.innerWidth-32,600)/imgEl.naturalWidth;
+    const pos=getPos(e,canvas);
     const sc=corners.map(c=>({x:c.x*scale,y:c.y*scale}));
     const hit=sc.findIndex(c=>Math.hypot(c.x-pos.x,c.y-pos.y)<24);
     if(hit>=0)setDragging(hit);
   }
   function moveDrag(e){
-    e.preventDefault();
-    if(dragging===null)return;
+    e.preventDefault();if(dragging===null)return;
     const canvas=canvasRef.current;
-    const maxW=Math.min(window.innerWidth-32,600);
-    const scale=maxW/imgEl.naturalWidth;
-    const pos=getCanvasPos(e,canvas);
-    const newCorners=[...corners];
-    newCorners[dragging]={x:Math.max(0,Math.min(imgEl.naturalWidth,pos.x/scale)),y:Math.max(0,Math.min(imgEl.naturalHeight,pos.y/scale))};
-    setCorners(newCorners);
+    const scale=Math.min(window.innerWidth-32,600)/imgEl.naturalWidth;
+    const pos=getPos(e,canvas);
+    setCorners(prev=>{const n=[...prev];n[dragging]={x:Math.max(0,Math.min(imgEl.naturalWidth,pos.x/scale)),y:Math.max(0,Math.min(imgEl.naturalHeight,pos.y/scale))};return n;});
   }
   function endDrag(){setDragging(null);}
 
@@ -181,48 +179,54 @@ function DocScanner({imageSrc,onAccept,onRetake}){
     setProcessing(true);
     setTimeout(()=>{
       const[tl,tr,br,bl]=corners;
-      const width=Math.max(Math.hypot(tr.x-tl.x,tr.y-tl.y),Math.hypot(br.x-bl.x,br.y-bl.y));
-      const height=Math.max(Math.hypot(bl.x-tl.x,bl.y-tl.y),Math.hypot(br.x-tr.x,br.y-tr.y));
+      const w=Math.max(Math.hypot(tr.x-tl.x,tr.y-tl.y),Math.hypot(br.x-bl.x,br.y-bl.y));
+      const h=Math.max(Math.hypot(bl.x-tl.x,bl.y-tl.y),Math.hypot(br.x-tr.x,br.y-tr.y));
       const out=document.createElement("canvas");
-      out.width=Math.round(width);out.height=Math.round(height);
+      out.width=Math.round(w);out.height=Math.round(h);
       const ctx=out.getContext("2d");
-      ctx.drawImage(imgEl,tl.x,tl.y,tr.x-tl.x,bl.y-tl.y,0,0,out.width,out.height);
+      for(let y=0;y<out.height;y++){
+        for(let x=0;x<out.width;x++){
+          const u=x/out.width,v=y/out.height;
+          const sx=(1-u)*(1-v)*tl.x+u*(1-v)*tr.x+u*v*br.x+(1-u)*v*bl.x;
+          const sy=(1-u)*(1-v)*tl.y+u*(1-v)*tr.y+u*v*br.y+(1-u)*v*bl.y;
+          ctx.drawImage(imgEl,sx,sy,1,1,x,y,1,1);
+        }
+      }
+      const id=ctx.getImageData(0,0,out.width,out.height);
+      const d=id.data;
+      for(let i=0;i<d.length;i+=4){
+        const g=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2];
+        const e=Math.min(255,Math.max(0,(g-128)*1.4+148));
+        d[i]=d[i+1]=d[i+2]=e;
+      }
+      ctx.putImageData(id,0,0);
       setProcessed(out.toDataURL("image/jpeg",0.92));
-      setMode("preview");
-      setProcessing(false);
+      setMode("preview");setProcessing(false);
     },50);
   }
 
- function acceptScan(){
-    try{
-      fetch(processed).then(r=>r.blob()).then(blob=>{
-        const file=new File([blob],"scan.jpg",{type:"image/jpeg"});
-        console.log("Calling onAccept with file and preview");
-        onAccept(file,processed);
-      }).catch(e=>console.error("Fetch error:",e));
-    }catch(e){console.error("acceptScan error:",e);}
+  function acceptScan(){
+    fetch(processed).then(r=>r.blob()).then(blob=>{
+      onAccept(new File([blob],"scan.jpg",{type:"image/jpeg"}),processed);
+    });
   }
 
- return(
-    <div style={{background:"#111",minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",padding:"16px",overflowY:"auto",maxHeight:"100vh"}}>
-      <div style={{color:"#fff",fontSize:15,fontWeight:500,marginBottom:12,textAlign:"center",flexShrink:0}}>
-        {mode==="crop"?"Drag the corners to fit the document edges":"Looking good? Accept or retake."}
+  return(
+    <div style={{background:"#111",minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",padding:"16px",overflowY:"auto"}}>
+      <div style={{color:"#fff",fontSize:15,fontWeight:500,marginBottom:12,textAlign:"center"}}>
+        {mode==="crop"?"Drag corners to fit document edges":"Looking good? Accept or retake."}
       </div>
-
       {mode==="crop"&&<>
-        <canvas ref={canvasRef}
-          style={{maxWidth:"100%",maxHeight:"50vh",borderRadius:8,touchAction:"none",cursor:"crosshair"}}
+        <canvas ref={canvasRef} style={{maxWidth:"100%",maxHeight:"60vh",borderRadius:8,touchAction:"none",cursor:"crosshair"}}
           onMouseDown={startDrag} onMouseMove={moveDrag} onMouseUp={endDrag}
           onTouchStart={startDrag} onTouchMove={moveDrag} onTouchEnd={endDrag}/>
         <div style={{display:"flex",gap:10,marginTop:16,width:"100%",maxWidth:400}}>
           <button onClick={onRetake} style={{flex:1,padding:"12px",fontSize:14,borderRadius:10,border:"1px solid rgba(255,255,255,.3)",background:"rgba(255,255,255,.1)",color:"#fff",cursor:"pointer"}}>Retake</button>
           <button onClick={applyTransform} disabled={processing} style={{flex:2,padding:"12px",fontSize:14,fontWeight:500,borderRadius:10,border:"none",background:"#2563eb",color:"#fff",cursor:"pointer",opacity:processing?.6:1}}>
-            {processing?<span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><span style={{width:16,height:16,border:"2px solid rgba(255,255,255,.4)",borderTopColor:"#fff",borderRadius:"50%",display:"inline-block",animation:"spin .8s linear infinite"}}/> Processing…</span>:"Apply crop &amp; enhance"}
+            {processing?"Processing…":"Apply crop & enhance"}
           </button>
         </div>
-        <div style={{color:"rgba(255,255,255,.4)",fontSize:12,marginTop:10,textAlign:"center"}}>Tip: pinch to zoom the page if you need more precision</div>
       </>}
-
       {mode==="preview"&&processed&&<>
         <img src={processed} style={{maxWidth:"100%",borderRadius:8,boxShadow:"0 4px 24px rgba(0,0,0,.5)"}}/>
         <div style={{display:"flex",gap:10,marginTop:16,width:"100%",maxWidth:400}}>
@@ -235,74 +239,28 @@ function DocScanner({imageSrc,onAccept,onRetake}){
   );
 }
 
-const emptyPt={disp_profile_no:"",first_name:"",surname:"",dob:"",id_number:"",phone:"",email:"",address:"",aid_name:"",aid_number:"",dependant_code:"",nok_name:"",nok_phone:""};
-const emptyRx={patientId:"",script_date:new Date().toISOString().slice(0,10),valid_until:"",doctor:"",practice_no:"",items:"",diagnosis:"",repeats:"",is_chronic:false,changes:"",dispensed_by_name:"",total_price:"",trailerFile:null,scriptFile:null,trailerPreview:null,scriptPreview:null};
-
-async function parseTrailerLabel(b64){
-  const res=await fetch("https://api.anthropic.com/v1/messages",{
-    method:"POST",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,messages:[{role:"user",content:[
-      {type:"image",source:{type:"base64",media_type:"image/jpeg",data:b64}},
-      {type:"text",text:`South African pharmacy trailer label sticker. Extract info, return ONLY JSON:
-{"patientSurname":string,"patientFirstName":string|null,"dispenserName":string|null,"medications":string,"scriptDate":string|null,"totalPrice":string|null,"doctor":string|null}
-Date: YYYY-MM-DD. Medications comma-separated with qty and strength. ONLY JSON.`}
-    ]}]})
-  });
-  const data=await res.json();
-  const text=data.content?.find(b=>b.type==="text")?.text||"{}";
-  return JSON.parse(text.replace(/```json|```/g,"").trim());
-}
-
-// ── Shared styles ──
-const inp={width:"100%",padding:"8px 10px",fontSize:14,border:"1px solid var(--color-border-secondary)",borderRadius:8,background:"var(--color-background-primary)",color:"var(--color-text-primary)",boxSizing:"border-box",outline:"none"};
-const lbl={fontSize:12,color:"var(--color-text-secondary)",marginBottom:3,display:"block"};
-const sec=t=><div style={{fontSize:11,fontWeight:500,color:"var(--color-text-tertiary)",textTransform:"uppercase",letterSpacing:"0.06em",margin:"14px 0 8px",borderBottom:"1px solid var(--color-border-tertiary)",paddingBottom:4}}>{t}</div>;
-const fld=(label,key,val,set,type="text",ph="",req=false,disabled=false)=>(<div style={{marginBottom:10}}><label style={lbl}>{label}{req&&<span style={{color:"var(--color-text-danger)"}}> *</span>}</label><input style={{...inp,opacity:disabled?.6:1}} type={type} value={val[key]||""} placeholder={ph} disabled={disabled} onChange={e=>set({...val,[key]:e.target.value})}/></div>);
-const row2=(a,b)=><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>{a}{b}</div>;
-const badge=(label,color)=><span style={{fontSize:11,fontWeight:500,padding:"2px 8px",borderRadius:20,background:`var(--color-background-${color})`,color:`var(--color-text-${color})`,border:`1px solid var(--color-border-${color})`}}>{label}</span>;
-const btnPrimary=(label,onClick,loading,color="info")=><button onClick={onClick} disabled={loading} style={{padding:"10px 20px",fontSize:14,fontWeight:500,borderRadius:8,width:"100%",background:`var(--color-background-${color})`,color:`var(--color-text-${color})`,border:`1px solid var(--color-border-${color})`,cursor:"pointer",opacity:loading?.6:1}}>{loading?"Saving…":label}</button>;
-
-// ── Image lightbox + actions ──
+// ── ScriptImages ──
 function ScriptImages({scriptPath,trailerPath,rxId,patientName}){
   const[scriptUrl,setScriptUrl]=useState(null);
   const[trailerUrl,setTrailerUrl]=useState(null);
   const[lightbox,setLightbox]=useState(null);
   const[shareOpen,setShareOpen]=useState(null);
-
   useEffect(()=>{
     if(scriptPath)sb.signedUrl(scriptPath).then(setScriptUrl);
     if(trailerPath)sb.signedUrl(trailerPath).then(setTrailerUrl);
   },[]);
-
   async function downloadImg(url,label){
-    try{
-      const res=await fetch(url);const blob=await res.blob();
-      const a=document.createElement("a");a.href=URL.createObjectURL(blob);
-      a.download=rxId+"_"+label.replace(/\s+/g,"_")+".jpg";
-      document.body.appendChild(a);a.click();document.body.removeChild(a);
-    }catch(e){window.open(url,"_blank");}
+    try{const res=await fetch(url);const blob=await res.blob();const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=rxId+"_"+label.replace(/\s+/g,"_")+".jpg";document.body.appendChild(a);a.click();document.body.removeChild(a);}
+    catch(e){window.open(url,"_blank");}
   }
   function printImg(url){
     const iframe=document.createElement("iframe");
     iframe.style.cssText="position:fixed;top:-9999px;left:-9999px;width:800px;height:600px;border:none";
-    iframe.onload=()=>{
-      try{iframe.contentWindow.focus();iframe.contentWindow.print();}
-      catch(e){window.open(url,"_blank");}
-      setTimeout(()=>document.body.removeChild(iframe),2000);
-    };
+    iframe.onload=()=>{try{iframe.contentWindow.focus();iframe.contentWindow.print();}catch(e){window.open(url,"_blank");}setTimeout(()=>document.body.removeChild(iframe),2000);};
     iframe.src=url;document.body.appendChild(iframe);
   }
-  function whatsapp(url){
-    const a=document.createElement("a");
-    a.href="https://wa.me/?text="+encodeURIComponent("Prescription "+rxId+" for "+patientName+": "+url);
-    a.target="_blank";a.rel="noopener noreferrer";
-    document.body.appendChild(a);a.click();document.body.removeChild(a);
-  }
-  function email(url){
-    const a=document.createElement("a");
-    a.href="mailto:?subject="+encodeURIComponent("Prescription "+rxId)+"&body="+encodeURIComponent("Prescription "+rxId+" for "+patientName+":\n\n"+url);
-    document.body.appendChild(a);a.click();document.body.removeChild(a);
-  }
+  function whatsapp(url){const a=document.createElement("a");a.href="https://wa.me/?text="+encodeURIComponent("Prescription "+rxId+" for "+patientName+": "+url);a.target="_blank";document.body.appendChild(a);a.click();document.body.removeChild(a);}
+  function email(url){const a=document.createElement("a");a.href="mailto:?subject="+encodeURIComponent("Prescription "+rxId)+"&body="+encodeURIComponent("Prescription "+rxId+" for "+patientName+":\n\n"+url);document.body.appendChild(a);a.click();document.body.removeChild(a);}
 
   const imgCard=(url,label)=>!url?null:(
     <div style={{borderRadius:8,overflow:"hidden",border:"1px solid var(--color-border-tertiary)"}}>
@@ -310,32 +268,30 @@ function ScriptImages({scriptPath,trailerPath,rxId,patientName}){
         <span style={{fontWeight:500}}>{label}</span>
         <div style={{display:"flex",gap:2}}>
           {[["ti-eye","View",()=>setLightbox({url,label})],["ti-download","Download",()=>downloadImg(url,label)],["ti-printer","Print",()=>printImg(url)],["ti-share","Share",()=>setShareOpen(shareOpen===label?null:label)]].map(([ic,tip,fn])=>
-            <button key={ic} title={tip} onClick={fn} style={{background:"none",border:"none",cursor:"pointer",fontSize:15,color:"var(--color-text-secondary)",padding:"2px 5px"}}><i className={`ti ${ic}`}/></button>
+            <button key={ic} title={tip} onClick={fn} style={{background:"none",border:"none",cursor:"pointer",fontSize:15,color:"var(--color-text-secondary)",padding:"2px 5px"}}><i className={"ti "+ic}/></button>
           )}
         </div>
       </div>
       {shareOpen===label&&(
         <div style={{padding:"8px",background:"var(--color-background-primary)",borderBottom:"1px solid var(--color-border-tertiary)",display:"flex",gap:6}}>
-          <button onClick={()=>{whatsapp(url);setShareOpen(null);}} style={{flex:1,padding:"7px",fontSize:12,fontWeight:500,borderRadius:7,border:"1px solid #25d366",background:"#e7fbe9",color:"#128c3e",cursor:"pointer"}}><i className="ti ti-brand-whatsapp"/> WhatsApp</button>
-          <button onClick={()=>{email(url);setShareOpen(null);}} style={{flex:1,padding:"7px",fontSize:12,fontWeight:500,borderRadius:7,border:"1px solid var(--color-border-info)",background:"var(--color-background-info)",color:"var(--color-text-info)",cursor:"pointer"}}><i className="ti ti-mail"/> Email</button>
+          <button onClick={()=>{whatsapp(url);setShareOpen(null);}} style={{flex:1,padding:"7px",fontSize:12,fontWeight:500,borderRadius:7,border:"1px solid #25d366",background:"#e7fbe9",color:"#128c3e",cursor:"pointer"}}>WhatsApp</button>
+          <button onClick={()=>{email(url);setShareOpen(null);}} style={{flex:1,padding:"7px",fontSize:12,fontWeight:500,borderRadius:7,border:"1px solid var(--color-border-info)",background:"var(--color-background-info)",color:"var(--color-text-info)",cursor:"pointer"}}>Email</button>
         </div>
       )}
       <img src={url} onClick={()=>setLightbox({url,label})} style={{width:"100%",display:"block",maxHeight:160,objectFit:"contain",background:"#fff",cursor:"zoom-in"}}/>
     </div>
   );
-
   return(
     <div style={{marginTop:10}}>
       <div style={{fontSize:11,color:"var(--color-text-tertiary)",marginBottom:6}}>Scanned documents</div>
       <div style={{display:"grid",gridTemplateColumns:scriptUrl&&trailerUrl?"1fr 1fr":"1fr",gap:8}}>
-        {imgCard(scriptUrl,"Prescription")}
-        {imgCard(trailerUrl,"Trailer label")}
+        {imgCard(scriptUrl,"Prescription")}{imgCard(trailerUrl,"Trailer label")}
       </div>
       {lightbox&&(
         <div onClick={()=>setLightbox(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.9)",zIndex:1000,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:16}}>
           <div style={{display:"flex",gap:6,marginBottom:12,flexWrap:"wrap",justifyContent:"center"}}>
             {[["ti-download","Download",()=>downloadImg(lightbox.url,lightbox.label)],["ti-printer","Print",()=>printImg(lightbox.url)],["ti-brand-whatsapp","WhatsApp",()=>whatsapp(lightbox.url)],["ti-mail","Email",()=>email(lightbox.url)],["ti-x","Close",()=>setLightbox(null)]].map(([ic,tip,fn])=>
-              <button key={ic} onClick={e=>{e.stopPropagation();fn();}} style={{padding:"8px 14px",borderRadius:8,border:"1px solid rgba(255,255,255,.25)",background:"rgba(255,255,255,.12)",color:"#fff",cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",gap:5}}><i className={`ti ${ic}`}/>{tip}</button>
+              <button key={ic} onClick={e=>{e.stopPropagation();fn();}} style={{padding:"8px 14px",borderRadius:8,border:"1px solid rgba(255,255,255,.25)",background:"rgba(255,255,255,.12)",color:"#fff",cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",gap:5}}><i className={"ti "+ic}/>{tip}</button>
             )}
           </div>
           <img src={lightbox.url} onClick={e=>e.stopPropagation()} style={{maxWidth:"100%",maxHeight:"75vh",borderRadius:8,objectFit:"contain"}}/>
@@ -346,24 +302,11 @@ function ScriptImages({scriptPath,trailerPath,rxId,patientName}){
   );
 }
 
-// ── Edit script modal (admin only) ──
+// ── EditScriptModal ──
 function EditScriptModal({rx,onSave,onClose}){
-  const[form,setForm]=useState({
-    script_date:rx.script_date||"",valid_until:rx.valid_until||"",
-    doctor:rx.doctor||"",practice_no:rx.practice_no||"",
-    items:rx.items||"",diagnosis:rx.diagnosis||"",
-    repeats:rx.repeats||0,is_chronic:rx.is_chronic||false,
-    changes:rx.changes||"",dispensed_by_name:rx.dispensed_by_name||"",total_price:rx.total_price||""
-  });
+  const[form,setForm]=useState({script_date:rx.script_date||"",valid_until:rx.valid_until||"",doctor:rx.doctor||"",practice_no:rx.practice_no||"",items:rx.items||"",diagnosis:rx.diagnosis||"",repeats:rx.repeats||0,is_chronic:rx.is_chronic||false,changes:rx.changes||"",dispensed_by_name:rx.dispensed_by_name||"",total_price:rx.total_price||""});
   const[saving,setSaving]=useState(false);
-
-  async function save(){
-    setSaving(true);
-    try{await onSave(rx.id,form);}
-    catch(e){alert("Save failed: "+e.message);}
-    setSaving(false);
-  }
-
+  async function save(){setSaving(true);try{await onSave(rx.id,form);}catch(e){alert("Save failed: "+e.message);}setSaving(false);}
   return(
     <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.5)",zIndex:500,display:"flex",alignItems:"flex-start",justifyContent:"center",padding:"20px 16px",overflowY:"auto"}}>
       <div onClick={e=>e.stopPropagation()} style={{background:"var(--color-background-primary)",borderRadius:14,width:"100%",maxWidth:520,padding:"20px",boxShadow:"0 8px 32px rgba(0,0,0,.2)"}}>
@@ -393,83 +336,94 @@ function EditScriptModal({rx,onSave,onClose}){
   );
 }
 
-// ── Upload Script panel (reusable in patient profile) ──
-function UploadScriptPanel({currentUser,patients,selPtId,onSaved,onAudit,compact=false,setScannerImg}){
-  const[newRx,setNewRx]=useState({...emptyRx,patientId:selPtId||""});
+// ── UploadScriptPanel ──
+// scannerImg and setScannerImg live in App and are passed as props.
+// onScanAccepted is a callback from App that delivers the scanned file+preview back into this panel.
+function UploadScriptPanel({currentUser,patients,selPtId,onSaved,onAudit,compact,requestScan,pendingScan,clearPendingScan}){
+  const emptyRx={patientId:selPtId||"",script_date:new Date().toISOString().slice(0,10),valid_until:"",doctor:"",practice_no:"",items:"",diagnosis:"",repeats:"",is_chronic:false,changes:"",dispensed_by_name:"",total_price:"",trailerFile:null,scriptFile:null,trailerPreview:null,scriptPreview:null};
+  const[newRx,setNewRx]=useState(emptyRx);
   const[ptSearch,setPtSearch]=useState("");
   const[scanStep,setScanStep]=useState("idle");
   const[loading,setLoading]=useState(false);
   const[toast,setToast]=useState(null);
-  const trailerRef=useRef();
-  const scriptRef=useRef();
+  const[waitingFor,setWaitingFor]=useState(null); // "script" | "trailer"
 
   useEffect(()=>{
     if(selPtId){
       const pt=patients.find(p=>p.id===selPtId);
-      if(pt){setNewRx(r=>({...r,patientId:selPtId}));setPtSearch(`${fullName(pt)} (${pt.id})`);}
+      if(pt){setNewRx(r=>({...r,patientId:selPtId}));setPtSearch(fullName(pt)+" ("+selPtId+")");}
     }
   },[selPtId]);
 
-  function showToast(msg,type="success"){setToast({msg,type});setTimeout(()=>setToast(null),3500);}
-  function resetScan(){setScanStep("idle");setNewRx({...emptyRx,patientId:selPtId||""});setPtSearch(selPtId?(()=>{const pt=patients.find(p=>p.id===selPtId);return pt?`${fullName(pt)} (${pt.id})`:""})():"");}
-
-  async function onScriptPhoto(file){
-    if(!file)return;
-    setScannerImg({src:URL.createObjectURL(file),target:"script"});
-  }
-  async function onTrailerPhoto(file){
-    if(!file)return;
-    setScannerImg({src:URL.createObjectURL(file),target:"trailer"});
-  }
-  function onScannerAccept(file,preview){
-    if(scannerImg.target==="script"){
+  // When App delivers a scanned file back
+  useEffect(()=>{
+    if(!pendingScan||!waitingFor)return;
+    const{file,preview}=pendingScan;
+    if(waitingFor==="script"){
       setNewRx(r=>({...r,scriptFile:file,scriptPreview:preview}));
       setScanStep("scanning_script");
     } else {
       setNewRx(r=>({...r,trailerFile:file,trailerPreview:preview}));
       setScanStep("parsing");
-      setScannerImg(null);
-      // trigger parse
       toBase64(file).then(b64=>parseTrailerLabel(b64)).then(parsed=>{
-        const matched=selPtId?patients.find(p=>p.id===selPtId):patients.find(p=>parsed.patientSurname&&p.surname.toLowerCase().includes(parsed.patientSurname.toLowerCase()));
-        setNewRx(r=>({...r,patientId:matched?matched.id:"",script_date:parsed.scriptDate||r.script_date,items:parsed.medications||"",dispensed_by_name:parsed.dispenserName||currentUser.name,total_price:parsed.totalPrice||"",doctor:parsed.doctor||""}));
-        if(!selPtId)setPtSearch(matched?`${fullName(matched)} (${matched.id})`:(parsed.patientSurname||""));
+        const matched=selPtId
+          ?patients.find(p=>p.id===selPtId)
+          :patients.find(p=>parsed.patientSurname&&p.surname.toLowerCase().includes(parsed.patientSurname.toLowerCase()));
+        setNewRx(r=>({...r,
+          patientId:matched?matched.id:r.patientId,
+          script_date:parsed.scriptDate||r.script_date,
+          items:parsed.medications||r.items,
+          dispensed_by_name:parsed.dispenserName||currentUser.name,
+          total_price:parsed.totalPrice||r.total_price,
+          doctor:parsed.doctor||r.doctor
+        }));
+        if(!selPtId&&matched)setPtSearch(fullName(matched)+" ("+matched.id+")");
+        else if(!selPtId&&parsed.patientSurname)setPtSearch(parsed.patientSurname);
         setScanStep("verify");
       }).catch(()=>{showToast("Could not read label — fill in manually","error");setScanStep("verify");});
-      return;
     }
-    setScannerImg(null);
+    setWaitingFor(null);
+    clearPendingScan();
+  },[pendingScan]);
+
+  function showToast(msg,type="success"){setToast({msg,type});setTimeout(()=>setToast(null),3500);}
+  function resetScan(){
+    setScanStep("idle");
+    const pt=selPtId?patients.find(p=>p.id===selPtId):null;
+    setNewRx({...emptyRx,patientId:selPtId||""});
+    setPtSearch(pt?fullName(pt)+" ("+selPtId+")":"");
+    setWaitingFor(null);
   }
-  function onScannerRetake(){setScannerImg(null);}
+
+  function openCamera(target){setWaitingFor(target);requestScan();}
 
   async function addScript(){
-    if(!newRx.patientId)return showToast("Patient not matched","error");
+    if(!newRx.patientId)return showToast("Patient not matched — search and select below","error");
     if(!newRx.items.trim())return showToast("Medications are required","error");
     setLoading(true);
     try{
       const id=genRxId(newRx.script_date);
       let trailer_img_path=null,script_img_path=null;
-      if(newRx.scriptFile){const ext=newRx.scriptFile.name.split(".").pop();script_img_path=`${newRx.patientId}/${id}_script.${ext}`;await sb.uploadFile(script_img_path,newRx.scriptFile);}
-      if(newRx.trailerFile){const ext=newRx.trailerFile.name.split(".").pop();trailer_img_path=`${newRx.patientId}/${id}_trailer.${ext}`;await sb.uploadFile(trailer_img_path,newRx.trailerFile);}
+      if(newRx.scriptFile){const ext=newRx.scriptFile.name.split(".").pop();script_img_path=newRx.patientId+"/"+id+"_script."+ext;await sb.uploadFile(script_img_path,newRx.scriptFile);}
+      if(newRx.trailerFile){const ext=newRx.trailerFile.name.split(".").pop();trailer_img_path=newRx.patientId+"/"+id+"_trailer."+ext;await sb.uploadFile(trailer_img_path,newRx.trailerFile);}
       const rx={id,patient_id:newRx.patientId,script_date:newRx.script_date||null,valid_until:newRx.valid_until||null,doctor:newRx.doctor,practice_no:newRx.practice_no,items:newRx.items,diagnosis:newRx.diagnosis,is_chronic:newRx.is_chronic,repeats:parseInt(newRx.repeats)||0,changes:newRx.changes,dispensed_by_name:newRx.dispensed_by_name||currentUser.name,dispensed_by_id:currentUser.id,total_price:newRx.total_price,trailer_img_path,script_img_path};
       await sb.query("prescriptions","POST",rx);
-      await onAudit("Uploaded script",`${id} for ${ptSearch}`);
-      onSaved(rx);resetScan();showToast(`Script ${id} saved`);
+      await onAudit("Uploaded script",id+" for "+ptSearch);
+      onSaved(rx);resetScan();showToast("Script "+id+" saved");
     }catch(e){showToast("Failed: "+e.message,"error");}
     setLoading(false);
   }
 
   return(
     <div style={{maxWidth:compact?null:500}}>
-      {toast&&<div style={{position:"fixed",top:16,right:16,zIndex:999,padding:"10px 18px",borderRadius:10,fontSize:13,fontWeight:500,background:toast.type==="error"?"var(--color-background-danger)":"var(--color-background-success)",color:toast.type==="error"?"var(--color-text-danger)":"var(--color-text-success)",border:`1px solid var(--color-border-${toast.type==="error"?"danger":"success"})`,boxShadow:"0 2px 12px rgba(0,0,0,.12)"}}>{toast.msg}</div>}
+      {toast&&<div style={{position:"fixed",top:16,right:16,zIndex:999,padding:"10px 18px",borderRadius:10,fontSize:13,fontWeight:500,background:toast.type==="error"?"var(--color-background-danger)":"var(--color-background-success)",color:toast.type==="error"?"var(--color-text-danger)":"var(--color-text-success)",border:"1px solid var(--color-border-"+(toast.type==="error"?"danger":"success")+")",boxShadow:"0 2px 12px rgba(0,0,0,.12)"}}>{toast.msg}</div>}
 
       {scanStep==="idle"&&<div>
         <div style={{textAlign:"center",padding:"16px 0 8px"}}>
           <div style={{width:50,height:50,borderRadius:12,background:"var(--color-background-info)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 12px"}}><i className="ti ti-file-text" style={{fontSize:24,color:"var(--color-text-info)"}}/></div>
           <div style={{fontSize:15,fontWeight:500,marginBottom:4}}>Step 1 of 3 — Scan prescription</div>
           <div style={{fontSize:13,color:"var(--color-text-secondary)",marginBottom:20,lineHeight:1.5}}>Take a clear photo of the physical prescription.</div>
-          <button onClick={()=>scriptRef.current?.click()} style={{padding:"11px 24px",fontSize:14,fontWeight:500,borderRadius:10,background:"var(--color-background-info)",color:"var(--color-text-info)",border:"1px solid var(--color-border-info)",cursor:"pointer"}}><i className="ti ti-camera"/> Open camera</button>
-          <input ref={scriptRef} type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={e=>onScriptPhoto(e.target.files[0])}/>
+          <button onClick={()=>openCamera("script")} style={{padding:"11px 24px",fontSize:14,fontWeight:500,borderRadius:10,background:"var(--color-background-info)",color:"var(--color-text-info)",border:"1px solid var(--color-border-info)",cursor:"pointer"}}><i className="ti ti-camera"/> Open camera</button>
         </div>
         <button onClick={()=>setScanStep("scanning_script")} style={{marginTop:10,width:"100%",padding:"9px",fontSize:13,borderRadius:8,border:"1px solid var(--color-border-secondary)",background:"transparent",color:"var(--color-text-secondary)",cursor:"pointer"}}>Skip — proceed to trailer label</button>
       </div>}
@@ -481,8 +435,7 @@ function UploadScriptPanel({currentUser,patients,selPtId,onSaved,onAudit,compact
           <div style={{width:50,height:50,borderRadius:12,background:"var(--color-background-warning)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 12px"}}><i className="ti ti-scan" style={{fontSize:24,color:"var(--color-text-warning)"}}/></div>
           <div style={{fontSize:15,fontWeight:500,marginBottom:4}}>Step 2 of 3 — Scan trailer label</div>
           <div style={{fontSize:13,color:"var(--color-text-secondary)",marginBottom:20,lineHeight:1.5}}>Photograph the small sticker label — AI will fill the form.</div>
-          <button onClick={()=>trailerRef.current?.click()} style={{padding:"11px 24px",fontSize:14,fontWeight:500,borderRadius:10,background:"var(--color-background-warning)",color:"var(--color-text-warning)",border:"1px solid var(--color-border-warning)",cursor:"pointer"}}><i className="ti ti-camera"/> Open camera</button>
-          <input ref={trailerRef} type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={e=>onTrailerPhoto(e.target.files[0])}/>
+          <button onClick={()=>openCamera("trailer")} style={{padding:"11px 24px",fontSize:14,fontWeight:500,borderRadius:10,background:"var(--color-background-warning)",color:"var(--color-text-warning)",border:"1px solid var(--color-border-warning)",cursor:"pointer"}}><i className="ti ti-camera"/> Open camera</button>
         </div>
         <button onClick={()=>setScanStep("verify")} style={{width:"100%",padding:"9px",fontSize:13,borderRadius:8,border:"1px solid var(--color-border-secondary)",background:"transparent",color:"var(--color-text-secondary)",cursor:"pointer"}}>Skip — fill in manually</button>
         <button onClick={()=>setScanStep("idle")} style={{marginTop:6,width:"100%",padding:"9px",fontSize:13,borderRadius:8,border:"none",background:"transparent",color:"var(--color-text-tertiary)",cursor:"pointer"}}>← Rescan prescription</button>
@@ -507,7 +460,7 @@ function UploadScriptPanel({currentUser,patients,selPtId,onSaved,onAudit,compact
             <label style={lbl}>Patient <span style={{color:"var(--color-text-danger)"}}>*</span></label>
             <input style={{...inp,borderColor:newRx.patientId?"var(--color-border-success)":"var(--color-border-secondary)"}} placeholder="Type name or patient ID…" value={ptSearch} onChange={e=>{setPtSearch(e.target.value);setNewRx(r=>({...r,patientId:""}));}}/>
             {ptSearch&&!newRx.patientId&&<div style={{position:"absolute",top:"100%",left:0,right:0,zIndex:10,background:"var(--color-background-primary)",border:"1px solid var(--color-border-secondary)",borderRadius:8,maxHeight:160,overflowY:"auto",boxShadow:"0 4px 12px rgba(0,0,0,.1)"}}>
-              {patients.filter(p=>fullName(p).toLowerCase().includes(ptSearch.toLowerCase())||p.id?.toLowerCase().includes(ptSearch.toLowerCase())||p.surname.toLowerCase().includes(ptSearch.toLowerCase())).map(p=><div key={p.id} onClick={()=>{setNewRx(r=>({...r,patientId:p.id}));setPtSearch(`${fullName(p)} (${p.id})`);}} style={{padding:"9px 12px",cursor:"pointer",fontSize:13,borderBottom:"1px solid var(--color-border-tertiary)"}}><span style={{fontWeight:500}}>{fullName(p)}</span><span style={{color:"var(--color-text-tertiary)"}}> {p.id}</span></div>)}
+              {patients.filter(p=>fullName(p).toLowerCase().includes(ptSearch.toLowerCase())||p.id?.toLowerCase().includes(ptSearch.toLowerCase())).map(p=><div key={p.id} onClick={()=>{setNewRx(r=>({...r,patientId:p.id}));setPtSearch(fullName(p)+" ("+p.id+")");}} style={{padding:"9px 12px",cursor:"pointer",fontSize:13,borderBottom:"1px solid var(--color-border-tertiary)"}}><span style={{fontWeight:500}}>{fullName(p)}</span><span style={{color:"var(--color-text-tertiary)"}}> {p.id}</span></div>)}
               {patients.filter(p=>fullName(p).toLowerCase().includes(ptSearch.toLowerCase())).length===0&&<div style={{padding:"10px 12px",fontSize:13,color:"var(--color-text-tertiary)"}}>No match found</div>}
             </div>}
           </div>
@@ -518,8 +471,10 @@ function UploadScriptPanel({currentUser,patients,selPtId,onSaved,onAudit,compact
         {sec("Medications")}
         <div style={{marginBottom:10}}><label style={lbl}>Medications dispensed <span style={{color:"var(--color-text-danger)"}}>*</span></label><textarea style={{...inp,minHeight:68,resize:"vertical"}} value={newRx.items} onChange={e=>setNewRx(r=>({...r,items:e.target.value}))} placeholder="Filled from label scan"/></div>
         <div style={{marginBottom:10}}><label style={lbl}>Dispensed by</label><input style={inp} value={newRx.dispensed_by_name} onChange={e=>setNewRx(r=>({...r,dispensed_by_name:e.target.value}))}/></div>
-        {row2(<div style={{marginBottom:10}}><label style={lbl}>Total price (R)</label><input style={inp} value={newRx.total_price} onChange={e=>setNewRx(r=>({...r,total_price:e.target.value}))} placeholder="e.g. 245.00"/></div>,
-              <div style={{marginBottom:10}}><label style={lbl}>Diagnosis</label><input style={inp} value={newRx.diagnosis} onChange={e=>setNewRx(r=>({...r,diagnosis:e.target.value}))} placeholder="optional"/></div>)}
+        {row2(
+          <div style={{marginBottom:10}}><label style={lbl}>Total price (R)</label><input style={inp} value={newRx.total_price} onChange={e=>setNewRx(r=>({...r,total_price:e.target.value}))} placeholder="e.g. 245.00"/></div>,
+          <div style={{marginBottom:10}}><label style={lbl}>Diagnosis</label><input style={inp} value={newRx.diagnosis} onChange={e=>setNewRx(r=>({...r,diagnosis:e.target.value}))} placeholder="optional"/></div>
+        )}
         <div style={{marginBottom:10,display:"flex",alignItems:"center",gap:10}}><input type="checkbox" checked={newRx.is_chronic} onChange={e=>setNewRx(r=>({...r,is_chronic:e.target.checked}))} style={{width:16,height:16,cursor:"pointer"}}/><label style={{fontSize:13,cursor:"pointer"}}>Chronic (repeat) script</label></div>
         {newRx.is_chronic&&<>
           {fld("Repeats remaining","repeats",newRx,setNewRx,"number","e.g. 5")}
@@ -549,7 +504,7 @@ function UploadScriptPanel({currentUser,patients,selPtId,onSaved,onAudit,compact
   );
 }
 
-// ── Main App ──
+// ── App ──
 function App(){
   const[currentUser,setCurrentUser]=useState(null);
   const[patients,setPatients]=useState([]);
@@ -559,71 +514,52 @@ function App(){
   const[search,setSearch]=useState("");
   const[selPt,setSelPt]=useState(null);
   const[expRx,setExpRx]=useState(null);
-  const[newPt,setNewPt]=useState(emptyPt);
+  const[newPt,setNewPt]=useState({disp_profile_no:"",first_name:"",surname:"",dob:"",id_number:"",phone:"",email:"",address:"",aid_name:"",aid_number:"",dependant_code:"",nok_name:"",nok_phone:""});
   const[toast,setToast]=useState(null);
   const[editRx,setEditRx]=useState(null);
   const[showUploadInProfile,setShowUploadInProfile]=useState(false);
-  const[scannerImg,setScannerImg]=useState(null);
+  // Scanner state lives here and is passed down
+  const[scannerOpen,setScannerOpen]=useState(false);
+  const[pendingScan,setPendingScan]=useState(null);
+  const fileRef=useRef();
 
   useEffect(()=>{if(currentUser)loadPatients();},[currentUser]);
-
-  async function loadPatients(){
-    setLoading(true);
-    try{const data=await sb.query("patients","GET",null,"?order=surname.asc");setPatients(data||[]);}
-    catch(e){showToast("Could not load patients","error");}
-    setLoading(false);
-  }
-  async function loadScripts(pid){
-    try{const data=await sb.query("prescriptions","GET",null,`?patient_id=eq.${pid}&order=script_date.desc`);setScripts(data||[]);}
-    catch(e){showToast("Could not load scripts","error");}
-  }
+  async function loadPatients(){setLoading(true);try{const data=await sb.query("patients","GET",null,"?order=surname.asc");setPatients(data||[]);}catch(e){showToast("Could not load patients","error");}setLoading(false);}
+  async function loadScripts(pid){try{const data=await sb.query("prescriptions","GET",null,"?patient_id=eq."+pid+"&order=script_date.desc");setScripts(data||[]);}catch(e){showToast("Could not load scripts","error");}}
   async function auditLog(action,detail){try{await sb.query("audit_log","POST",{staff_name:currentUser.name,staff_id:currentUser.id,action,detail});}catch(e){}}
 
   if(!currentUser)return React.createElement(LoginScreen,{onLogin:setCurrentUser});
-
   const TABS=["Search",can(currentUser,"addPatient")&&"Add Patient",can(currentUser,"upload")&&"Upload Script",currentUser.role==="admin"&&"Staff"].filter(Boolean);
-
   function showToast(msg,type="success"){setToast({msg,type});setTimeout(()=>setToast(null),3500);}
 
-  const filteredPts=patients.filter(p=>{
-    const q=search.toLowerCase();
-    return fullName(p).toLowerCase().includes(q)||p.id?.toLowerCase().includes(q)||p.disp_profile_no?.toLowerCase().includes(q)||p.aid_number?.toLowerCase().includes(q)||p.id_number?.includes(q);
-  });
+  const filteredPts=patients.filter(p=>{const q=search.toLowerCase();return fullName(p).toLowerCase().includes(q)||p.id?.toLowerCase().includes(q)||p.disp_profile_no?.toLowerCase().includes(q)||p.aid_number?.toLowerCase().includes(q)||p.id_number?.includes(q);});
 
   async function addPatient(){
-    if(!newPt.first_name.trim()||!newPt.surname.trim())return showToast("First name and surname required","error");
+    const np=newPt;
+    if(!np.first_name.trim()||!np.surname.trim())return showToast("First name and surname required","error");
     setLoading(true);
-    try{
-      const id=genPtId(patients);
-      await sb.query("patients","POST",{...newPt,id,created_by:currentUser.name});
-      setPatients(p=>[...p,{...newPt,id}].sort((a,b)=>a.surname.localeCompare(b.surname)));
-      await auditLog("Added patient",`${newPt.first_name} ${newPt.surname} (${id})`);
-      setNewPt(emptyPt);showToast(`${newPt.first_name} ${newPt.surname} added (${id})`);
-    }catch(e){showToast("Failed: "+e.message,"error");}
+    try{const id=genPtId(patients);await sb.query("patients","POST",{...np,id,created_by:currentUser.name});setPatients(p=>[...p,{...np,id}].sort((a,b)=>a.surname.localeCompare(b.surname)));await auditLog("Added patient",np.first_name+" "+np.surname+" ("+id+")");setNewPt({disp_profile_no:"",first_name:"",surname:"",dob:"",id_number:"",phone:"",email:"",address:"",aid_name:"",aid_number:"",dependant_code:"",nok_name:"",nok_phone:""});showToast(np.first_name+" "+np.surname+" added ("+id+")");}
+    catch(e){showToast("Failed: "+e.message,"error");}
     setLoading(false);
   }
+  async function saveEditedScript(rxId,form){await sb.query("prescriptions","PATCH",form,"?id=eq."+rxId);setScripts(s=>s.map(r=>r.id===rxId?{...r,...form}:r));await auditLog("Edited script",rxId);setEditRx(null);showToast("Script updated");}
+  function handleScriptSaved(rx){setScripts(s=>[rx,...s]);setShowUploadInProfile(false);showToast("Script "+rx.id+" saved");}
 
-  async function saveEditedScript(rxId,form){
-    await sb.query("prescriptions","PATCH",form,`?id=eq.${rxId}`);
-    setScripts(s=>s.map(r=>r.id===rxId?{...r,...form}:r));
-    await auditLog("Edited script",rxId);
-    setEditRx(null);showToast("Script updated");
-  }
-
-  function handleScriptSaved(rx){
-    setScripts(s=>[rx,...s]);
-    setShowUploadInProfile(false);
-    showToast(`Script ${rx.id} saved`);
-  }
+  // Camera: open file input, on change open DocScanner
+  const[rawImg,setRawImg]=useState(null);
+  function requestScan(){fileRef.current.value="";fileRef.current.click();}
+  function onFileChange(e){const f=e.target.files[0];if(f)setRawImg(URL.createObjectURL(f));}
+  function onScannerAccept(file,preview){setRawImg(null);setPendingScan({file,preview});}
+  function onScannerRetake(){setRawImg(null);}
 
   return(
     <div style={{fontFamily:"var(--font-sans)",maxWidth:700,margin:"0 auto",padding:"12px 16px",color:"var(--color-text-primary)"}}>
-      {scannerImg&&<div style={{position:"fixed",inset:0,zIndex:2000}}><DocScanner imageSrc={scannerImg.src} onAccept={(file,preview)=>{if(scannerImg.target==="script"){setScannerImg({...scannerImg,scriptFile:file,scriptPreview:preview});setScannerImg(null);}else{setScannerImg({...scannerImg,trailerFile:file,trailerPreview:preview});setScannerImg(null);}}} onRetake={()=>setScannerImg(null)}/></div>}  
-{toast&&<div style={{position:"fixed",top:16,right:16,zIndex:999,padding:"10px 18px",borderRadius:10,fontSize:13,fontWeight:500,background:toast.type==="error"?"var(--color-background-danger)":"var(--color-background-success)",color:toast.type==="error"?"var(--color-text-danger)":"var(--color-text-success)",border:`1px solid var(--color-border-${toast.type==="error"?"danger":"success"})`,boxShadow:"0 2px 12px rgba(0,0,0,.12)"}}>{toast.msg}</div>}
+      <input ref={fileRef} type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={onFileChange}/>
+      {rawImg&&<div style={{position:"fixed",inset:0,zIndex:2000}}><DocScanner imageSrc={rawImg} onAccept={onScannerAccept} onRetake={onScannerRetake}/></div>}
+      {toast&&<div style={{position:"fixed",top:16,right:16,zIndex:999,padding:"10px 18px",borderRadius:10,fontSize:13,fontWeight:500,background:toast.type==="error"?"var(--color-background-danger)":"var(--color-background-success)",color:toast.type==="error"?"var(--color-text-danger)":"var(--color-text-success)",border:"1px solid var(--color-border-"+(toast.type==="error"?"danger":"success")+")",boxShadow:"0 2px 12px rgba(0,0,0,.12)"}}>{toast.msg}</div>}
       {loading&&<div style={{position:"fixed",top:0,left:0,right:0,height:3,background:"var(--color-text-info)",zIndex:9999}}/>}
       {editRx&&<EditScriptModal rx={editRx} onSave={saveEditedScript} onClose={()=>setEditRx(null)}/>}
 
-      {/* Header */}
       <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
         <div style={{width:34,height:34,borderRadius:8,background:"var(--color-background-info)",display:"flex",alignItems:"center",justifyContent:"center"}}><i className="ti ti-pill" style={{fontSize:18,color:"var(--color-text-info)"}}/></div>
         <div><div style={{fontSize:16,fontWeight:500}}>PharmaSave</div><div style={{fontSize:12,color:"var(--color-text-secondary)"}}>Prescription Manager</div></div>
@@ -633,12 +569,10 @@ function App(){
         </div>
       </div>
 
-      {/* Tabs */}
       <div style={{display:"flex",gap:4,marginBottom:16,borderBottom:"1px solid var(--color-border-tertiary)"}}>
         {TABS.map((t,i)=><button key={t} onClick={()=>setTab(i)} style={{padding:"8px 12px",fontSize:13,fontWeight:tab===i?500:400,border:"none",borderBottom:tab===i?"2px solid var(--color-text-info)":"2px solid transparent",background:"transparent",color:tab===i?"var(--color-text-info)":"var(--color-text-secondary)",cursor:"pointer",marginBottom:-1}}>{t}</button>)}
       </div>
 
-      {/* ── SEARCH ── */}
       {TABS[tab]==="Search"&&!selPt&&<>
         <div style={{position:"relative",marginBottom:14}}>
           <i className="ti ti-search" style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",fontSize:16,color:"var(--color-text-tertiary)"}}/>
@@ -652,22 +586,18 @@ function App(){
         </div>)}
       </>}
 
-      {/* ── PATIENT DETAIL ── */}
       {TABS[tab]==="Search"&&selPt&&<div>
         <button onClick={()=>{setSelPt(null);setExpRx(null);setScripts([]);setShowUploadInProfile(false);}} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",color:"var(--color-text-info)",cursor:"pointer",fontSize:13,padding:0,marginBottom:14}}><i className="ti ti-arrow-left"/> Back</button>
-
-        {/* Profile card */}
         <div style={{background:"var(--color-background-secondary)",border:"1px solid var(--color-border-tertiary)",borderRadius:12,padding:"14px 16px",marginBottom:16}}>
           <div style={{display:"flex",gap:12,alignItems:"flex-start",marginBottom:10}}>
             <div style={{width:44,height:44,borderRadius:"50%",background:"var(--color-background-info)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><i className="ti ti-user" style={{fontSize:22,color:"var(--color-text-info)"}}/></div>
-            <div style={{flex:1}}><div style={{fontSize:17,fontWeight:500}}>{fullName(selPt)}</div><div style={{fontSize:12,color:"var(--color-text-secondary)",marginTop:2}}>ID: {selPt.id} {selPt.disp_profile_no&&<span>· Dispensing profile: <strong>{selPt.disp_profile_no}</strong></span>}</div></div>
+            <div style={{flex:1}}><div style={{fontSize:17,fontWeight:500}}>{fullName(selPt)}</div><div style={{fontSize:12,color:"var(--color-text-secondary)",marginTop:2}}>ID: {selPt.id}{selPt.disp_profile_no?" · Dispensing profile: "+selPt.disp_profile_no:""}</div></div>
           </div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"5px 20px",fontSize:13}}>
-            {[["DOB",fmtDate(selPt.dob)],["SA ID",selPt.id_number],["Phone",selPt.phone],["Email",selPt.email],["Medical aid",selPt.aid_name],["Aid number",selPt.aid_number],["Dependant code",selPt.dependant_code],["Address",selPt.address],["Next of kin",selPt.nok_name?`${selPt.nok_name} · ${selPt.nok_phone}`:""]].filter(([,v])=>v).map(([l,v])=><div key={l}><span style={{color:"var(--color-text-tertiary)",fontSize:11}}>{l} </span><span>{v}</span></div>)}
+            {[["DOB",fmtDate(selPt.dob)],["SA ID",selPt.id_number],["Phone",selPt.phone],["Email",selPt.email],["Medical aid",selPt.aid_name],["Aid number",selPt.aid_number],["Dependant code",selPt.dependant_code],["Address",selPt.address],["Next of kin",selPt.nok_name?selPt.nok_name+" · "+selPt.nok_phone:""]].filter(([,v])=>v).map(([l,v])=><div key={l}><span style={{color:"var(--color-text-tertiary)",fontSize:11}}>{l} </span><span>{v}</span></div>)}
           </div>
         </div>
 
-        {/* Upload from profile */}
         {can(currentUser,"upload")&&<div style={{marginBottom:16}}>
           {!showUploadInProfile
             ?<button onClick={()=>setShowUploadInProfile(true)} style={{width:"100%",padding:"10px",fontSize:13,fontWeight:500,borderRadius:10,border:"1px solid var(--color-border-info)",background:"var(--color-background-info)",color:"var(--color-text-info)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><i className="ti ti-plus"/> Upload new prescription</button>
@@ -676,15 +606,12 @@ function App(){
                 <div style={{fontSize:14,fontWeight:500}}>New prescription for {selPt.first_name}</div>
                 <button onClick={()=>setShowUploadInProfile(false)} style={{background:"none",border:"none",fontSize:18,cursor:"pointer",color:"var(--color-text-secondary)"}}><i className="ti ti-x"/></button>
               </div>
-              <UploadScriptPanel currentUser={currentUser} patients={patients} selPtId={selPt.id} onSaved={handleScriptSaved} onAudit={auditLog} compact={true} setScannerImg={setScannerImg}/>
+              <UploadScriptPanel currentUser={currentUser} patients={patients} selPtId={selPt.id} onSaved={handleScriptSaved} onAudit={auditLog} compact={true} requestScan={requestScan} pendingScan={pendingScan} clearPendingScan={()=>setPendingScan(null)}/>
             </div>
           }
         </div>}
 
-        {/* Scripts list */}
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-          <div style={{fontSize:13,fontWeight:500,color:"var(--color-text-secondary)"}}>{scripts.length} prescription{scripts.length!==1?"s":""} on file</div>
-        </div>
+        <div style={{fontSize:13,fontWeight:500,marginBottom:10,color:"var(--color-text-secondary)"}}>{scripts.length} prescription{scripts.length!==1?"s":""} on file</div>
         {scripts.length===0&&!loading&&<div style={{textAlign:"center",color:"var(--color-text-tertiary)",padding:"24px 0",fontSize:14}}>No scripts on file yet.</div>}
         {scripts.map(rx=>{
           const isOpen=expRx===rx.id;const isExpired=rx.valid_until&&new Date(rx.valid_until)<new Date();
@@ -692,14 +619,14 @@ function App(){
             <div onClick={()=>setExpRx(isOpen?null:rx.id)} style={{display:"flex",alignItems:"center",gap:12,padding:"11px 14px",cursor:"pointer"}}>
               <i className="ti ti-file-text" style={{fontSize:20,color:"var(--color-text-info)",flexShrink:0}}/>
               <div style={{flex:1,minWidth:0}}>
-                <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}><span style={{fontWeight:500,fontSize:13}}>{rx.id}</span>{rx.is_chronic&&badge("Chronic","warning")}{isExpired&&badge("Expired","danger")}{rx.repeats>0&&badge(`${rx.repeats} repeat${rx.repeats>1?"s":""}`, "info")}</div>
+                <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}><span style={{fontWeight:500,fontSize:13}}>{rx.id}</span>{rx.is_chronic&&badge("Chronic","warning")}{isExpired&&badge("Expired","danger")}{rx.repeats>0&&badge(rx.repeats+" repeat"+(rx.repeats>1?"s":""),"info")}</div>
                 <div style={{fontSize:12,color:"var(--color-text-secondary)",marginTop:2}}>{fmtDate(rx.script_date)} · {rx.doctor||"Doctor not recorded"}</div>
               </div>
               {currentUser.role==="admin"&&<button onClick={e=>{e.stopPropagation();setEditRx(rx);}} title="Edit" style={{background:"none",border:"none",cursor:"pointer",fontSize:16,color:"var(--color-text-secondary)",padding:"4px 6px"}}><i className="ti ti-pencil"/></button>}
-              <i className={`ti ti-chevron-${isOpen?"up":"down"}`} style={{color:"var(--color-text-tertiary)"}}/>
+              <i className={"ti ti-chevron-"+(isOpen?"up":"down")} style={{color:"var(--color-text-tertiary)"}}/>
             </div>
             {isOpen&&<div style={{borderTop:"1px solid var(--color-border-tertiary)",padding:"12px 14px"}}>
-              {[["Script date",fmtDate(rx.script_date)],["Valid until",fmtDate(rx.valid_until)],["Doctor",rx.doctor],["Medications",rx.items],["Diagnosis",rx.diagnosis],["Dispensed by",rx.dispensed_by_name],["Total price",rx.total_price?`R${rx.total_price}`:""]].map(([l,v])=>v?<div key={l} style={{marginBottom:8,fontSize:13}}><div style={{fontSize:11,color:"var(--color-text-tertiary)",marginBottom:2}}>{l}</div><div>{v}</div></div>:null)}
+              {[["Script date",fmtDate(rx.script_date)],["Valid until",fmtDate(rx.valid_until)],["Doctor",rx.doctor],["Medications",rx.items],["Diagnosis",rx.diagnosis],["Dispensed by",rx.dispensed_by_name],["Total price",rx.total_price?"R"+rx.total_price:""]].map(([l,v])=>v?<div key={l} style={{marginBottom:8,fontSize:13}}><div style={{fontSize:11,color:"var(--color-text-tertiary)",marginBottom:2}}>{l}</div><div>{v}</div></div>:null)}
               {rx.is_chronic&&rx.changes&&<div style={{marginBottom:8,padding:"8px 12px",background:"var(--color-background-warning)",borderRadius:8,border:"1px solid var(--color-border-warning)"}}><div style={{fontSize:11,color:"var(--color-text-warning)",marginBottom:2}}>Changes from previous script</div><div style={{fontSize:13,color:"var(--color-text-warning)"}}>{rx.changes}</div></div>}
               {(rx.script_img_path||rx.trailer_img_path)&&<ScriptImages scriptPath={rx.script_img_path} trailerPath={rx.trailer_img_path} rxId={rx.id} patientName={fullName(selPt)}/>}
             </div>}
@@ -707,7 +634,6 @@ function App(){
         })}
       </div>}
 
-      {/* ── ADD PATIENT ── */}
       {TABS[tab]==="Add Patient"&&<div style={{maxWidth:480}}>
         {sec("Identity")}
         {row2(fld("First name","first_name",newPt,setNewPt,"text","e.g. Thandi",true),fld("Surname","surname",newPt,setNewPt,"text","e.g. Dlamini",true))}
@@ -722,19 +648,17 @@ function App(){
         {fld("Dispensing system profile number","disp_profile_no",newPt,setNewPt,"text","e.g. DISP-4421")}
         {sec("Emergency contact")}
         {row2(fld("Next of kin name","nok_name",newPt,setNewPt,"text","Full name"),fld("Next of kin phone","nok_phone",newPt,setNewPt,"tel","e.g. 082 111 2222"))}
-        {btnPrimary("Add patient",addPatient,loading)}
+        <button onClick={addPatient} disabled={loading} style={{marginTop:8,padding:"10px 20px",fontSize:14,fontWeight:500,borderRadius:8,width:"100%",background:"var(--color-background-info)",color:"var(--color-text-info)",border:"1px solid var(--color-border-info)",cursor:"pointer",opacity:loading?.6:1}}>{loading?"Saving…":"Add patient"}</button>
       </div>}
 
-      {/* ── UPLOAD SCRIPT TAB ── */}
-      {TABS[tab]==="Upload Script"&&<UploadScriptPanel currentUser={currentUser} patients={patients} selPtId={null} onSaved={rx=>{showToast("Script "+rx.id+" saved");setTab(0);}} onAudit={auditLog} setScannerImg={setScannerImg}/>}
+      {TABS[tab]==="Upload Script"&&<UploadScriptPanel currentUser={currentUser} patients={patients} selPtId={null} onSaved={rx=>{showToast("Script "+rx.id+" saved");setTab(0);}} onAudit={auditLog} requestScan={requestScan} pendingScan={pendingScan} clearPendingScan={()=>setPendingScan(null)}/>}
 
-      {/* ── STAFF ── */}
       {TABS[tab]==="Staff"&&<div>
         <div style={{fontSize:14,color:"var(--color-text-secondary)",marginBottom:16}}>Locum PINs are auto-generated daily and expire at midnight.</div>
         {["admin","dispenser","locum"].map(role=><div key={role} style={{marginBottom:18}}>
           <div style={{fontSize:11,fontWeight:500,color:"var(--color-text-tertiary)",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:8}}>{RL[role]}</div>
           {STAFF.filter(s=>s.role===role).map(s=><div key={s.id} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",border:"1px solid var(--color-border-tertiary)",borderRadius:10,marginBottom:6,background:"var(--color-background-secondary)"}}>
-            <div style={{width:36,height:36,borderRadius:"50%",background:`var(--color-background-${RC[role]})`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><i className="ti ti-user" style={{fontSize:16,color:`var(--color-text-${RC[role]})`}}/></div>
+            <div style={{width:36,height:36,borderRadius:"50%",background:"var(--color-background-"+RC[role]+")",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><i className="ti ti-user" style={{fontSize:16,color:"var(--color-text-"+RC[role]+")"}}/></div>
             <div style={{flex:1}}><div style={{fontWeight:500,fontSize:14}}>{s.name}</div><div style={{fontSize:12,color:"var(--color-text-secondary)"}}>{s.title}</div></div>
             <PinDisplay role={role} pin={getPin(s)}/>
           </div>)}
@@ -748,7 +672,7 @@ function PinDisplay({role,pin}){
   const[show,setShow]=useState(false);
   return<div style={{display:"flex",alignItems:"center",gap:8}}>
     <div style={{textAlign:"right"}}><div style={{fontSize:11,color:"var(--color-text-tertiary)"}}>{role==="locum"?"Today's PIN":"PIN"}</div><div style={{fontFamily:"var(--font-mono)",fontSize:15,fontWeight:500,letterSpacing:"0.1em",color:show?"var(--color-text-primary)":"var(--color-text-tertiary)"}}>{show?pin:"• • • • •"}</div></div>
-    <button onClick={()=>setShow(s=>!s)} style={{padding:"6px 8px",borderRadius:8,border:"1px solid var(--color-border-secondary)",background:"var(--color-background-primary)",color:"var(--color-text-secondary)",cursor:"pointer",fontSize:14}}><i className={`ti ti-eye${show?"-off":""}`}/></button>
+    <button onClick={()=>setShow(s=>!s)} style={{padding:"6px 8px",borderRadius:8,border:"1px solid var(--color-border-secondary)",background:"var(--color-background-primary)",color:"var(--color-text-secondary)",cursor:"pointer",fontSize:14}}><i className={"ti ti-eye"+(show?"-off":"")}/></button>
     {role==="locum"&&show&&<span style={{fontSize:11,padding:"2px 8px",borderRadius:20,background:"var(--color-background-warning)",color:"var(--color-text-warning)",border:"1px solid var(--color-border-warning)"}}>Expires midnight</span>}
   </div>;
 }
@@ -773,14 +697,14 @@ function LoginScreen({onLogin}){
       {["admin","dispenser","locum"].map(role=><div key={role} style={{marginBottom:14}}>
         <div style={{fontSize:11,fontWeight:500,color:"var(--color-text-tertiary)",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:6}}>{RL[role]}</div>
         {STAFF.filter(s=>s.role===role).map(s=><button key={s.id} onClick={()=>{setSelStaff(s);setPin("");setErr("");}} style={{display:"flex",alignItems:"center",gap:12,width:"100%",padding:"11px 14px",border:"1px solid var(--color-border-tertiary)",borderRadius:10,marginBottom:6,cursor:"pointer",background:"var(--color-background-secondary)",textAlign:"left"}}>
-          <div style={{width:34,height:34,borderRadius:"50%",background:`var(--color-background-${RC[role]})`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><i className="ti ti-user" style={{fontSize:16,color:`var(--color-text-${RC[role]})`}}/></div>
+          <div style={{width:34,height:34,borderRadius:"50%",background:"var(--color-background-"+RC[role]+")",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><i className="ti ti-user" style={{fontSize:16,color:"var(--color-text-"+RC[role]+")"}}/></div>
           <div><div style={{fontSize:14,fontWeight:500,color:"var(--color-text-primary)"}}>{s.name}</div><div style={{fontSize:12,color:"var(--color-text-secondary)"}}>{s.title}</div></div>
         </button>)}
       </div>)}
     </>:<>
       <button onClick={()=>{setSelStaff(null);setPin("");setErr("");}} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",color:"var(--color-text-info)",cursor:"pointer",fontSize:13,padding:0,marginBottom:20}}><i className="ti ti-arrow-left"/> Back</button>
       <div style={{textAlign:"center",marginBottom:24}}>
-        <div style={{width:52,height:52,borderRadius:"50%",background:`var(--color-background-${RC[selStaff.role]})`,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 10px"}}><i className="ti ti-user" style={{fontSize:24,color:`var(--color-text-${RC[selStaff.role]})`}}/></div>
+        <div style={{width:52,height:52,borderRadius:"50%",background:"var(--color-background-"+RC[selStaff.role]+")",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 10px"}}><i className="ti ti-user" style={{fontSize:24,color:"var(--color-text-"+RC[selStaff.role]+")"}}/></div>
         <div style={{fontSize:16,fontWeight:500}}>{selStaff.name}</div>
         <div style={{fontSize:13,color:"var(--color-text-secondary)"}}>{selStaff.title}</div>
       </div>
