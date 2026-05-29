@@ -105,7 +105,23 @@ async function parseTrailerLabel(b64){
 const inp={width:"100%",padding:"8px 10px",fontSize:14,border:"1px solid var(--color-border-secondary)",borderRadius:8,background:"var(--color-background-primary)",color:"var(--color-text-primary)",boxSizing:"border-box",outline:"none"};
 const lbl={fontSize:12,color:"var(--color-text-secondary)",marginBottom:3,display:"block"};
 const sec=t=><div style={{fontSize:11,fontWeight:500,color:"var(--color-text-tertiary)",textTransform:"uppercase",letterSpacing:"0.06em",margin:"14px 0 8px",borderBottom:"1px solid var(--color-border-tertiary)",paddingBottom:4}}>{t}</div>;
-const fld=(label,key,val,set,type="text",ph="",req=false)=>(<div style={{marginBottom:10}}><label style={lbl}>{label}{req&&<span style={{color:"var(--color-text-danger)"}}> *</span>}</label><input style={inp} type={type} value={val[key]||""} placeholder={ph} onChange={e=>set(v=>({...v,[key]:e.target.value}))}/></div>);
+const fld=(label,key,val,set,type="text",ph="",req=false,maxLen=null)=>(<div style={{marginBottom:10}}><label style={lbl}>{label}{req&&<span style={{color:"var(--color-text-danger)"}}> *</span>}</label><input style={inp} type={type} value={val[key]||""} placeholder={ph} maxLength={maxLen||undefined} onChange={e=>set(v=>({...v,[key]:e.target.value}))}/></div>);
+
+// Parse SA ID: YYMMDD → full DOB
+function parseSaId(id){
+  if(!id||id.length<6)return null;
+  const yy=id.slice(0,2),mm=id.slice(2,4),dd=id.slice(4,6);
+  if(isNaN(yy+mm+dd))return null;
+  const year=parseInt(yy)<30?"20"+yy:"19"+yy;
+  return year+"-"+mm+"-"+dd;
+}
+// Format phone to +27
+function fmtPhone(val){
+  const digits=val.replace(/\D/g,"");
+  if(digits.startsWith("27"))return"+"+digits;
+  if(digits.startsWith("0")&&digits.length>=10)return"+27"+digits.slice(1);
+  return val;
+}
 const row2=(a,b)=><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>{a}{b}</div>;
 const badge=(label,color)=><span style={{fontSize:11,fontWeight:500,padding:"2px 8px",borderRadius:20,background:"var(--color-background-"+color+")",color:"var(--color-text-"+color+")",border:"1px solid var(--color-border-"+color+")"}}>{label}</span>;
 
@@ -514,7 +530,7 @@ function App(){
   const[search,setSearch]=useState("");
   const[selPt,setSelPt]=useState(null);
   const[expRx,setExpRx]=useState(null);
-  const[newPt,setNewPt]=useState({disp_profile_no:"",first_name:"",surname:"",dob:"",id_number:"",phone:"",email:"",address:"",aid_name:"",aid_number:"",dependant_code:"",nok_name:"",nok_phone:""});
+  const[newPt,setNewPt]=useState({disp_profile_no:"",first_name:"",surname:"",dob:"",id_number:"",phone:"",email:"",address_line1:"",address_line2:"",address_line3:"",address_province:"",address_postal:"",aid_name:"",aid_number:"",dependant_code:"",nok_name:"",nok_phone:""});
   const[toast,setToast]=useState(null);
   const[editRx,setEditRx]=useState(null);
   const[showUploadInProfile,setShowUploadInProfile]=useState(false);
@@ -545,6 +561,11 @@ function App(){
     setLoading(false);
   }
   async function saveEditedScript(rxId,form){await sb.query("prescriptions","PATCH",form,"?id=eq."+rxId);setScripts(s=>s.map(r=>r.id===rxId?{...r,...form}:r));await auditLog("Edited script",rxId);setEditRx(null);showToast("Script updated");}
+  async function deleteScript(rxId){
+    if(!window.confirm("Permanently delete script "+rxId+"? This cannot be undone."))return;
+    try{await sb.query("prescriptions","DELETE",null,"?id=eq."+rxId);setScripts(s=>s.filter(r=>r.id!==rxId));await auditLog("Deleted script",rxId);showToast("Script deleted");}
+    catch(e){showToast("Delete failed: "+e.message,"error");}
+  }
   function handleScriptSaved(rx){setScripts(s=>[rx,...s]);setShowUploadInProfile(false);showToast("Script "+rx.id+" saved");}
 
   // Camera: open file input, on change open DocScanner
@@ -624,6 +645,7 @@ function App(){
                 <div style={{fontSize:12,color:"var(--color-text-secondary)",marginTop:2}}>{fmtDate(rx.script_date)} · {rx.doctor||"Doctor not recorded"}</div>
               </div>
               {currentUser.role==="admin"&&<button onClick={e=>{e.stopPropagation();setEditRx(rx);}} title="Edit" style={{background:"none",border:"none",cursor:"pointer",fontSize:16,color:"var(--color-text-secondary)",padding:"4px 6px"}}><i className="ti ti-pencil"/></button>}
+              {currentUser.role==="admin"&&<button onClick={e=>{e.stopPropagation();deleteScript(rx.id);}} title="Delete" style={{background:"none",border:"none",cursor:"pointer",fontSize:16,color:"var(--color-text-danger)",padding:"4px 6px"}}><i className="ti ti-trash"/></button>}
               <i className={"ti ti-chevron-"+(isOpen?"up":"down")} style={{color:"var(--color-text-tertiary)"}}/>
             </div>
             {isOpen&&<div style={{borderTop:"1px solid var(--color-border-tertiary)",padding:"12px 14px"}}>
@@ -638,17 +660,43 @@ function App(){
       {TABS[tab]==="Add Patient"&&<div style={{maxWidth:480}}>
         {sec("Identity")}
         {row2(fld("First name","first_name",newPt,setNewPt,"text","e.g. Thandi",true),fld("Surname","surname",newPt,setNewPt,"text","e.g. Dlamini",true))}
-        {row2(fld("Date of birth","dob",newPt,setNewPt,"date"),fld("SA ID number","id_number",newPt,setNewPt,"text","13-digit ID"))}
+        <div style={{marginBottom:10}}>
+          <label style={lbl}>SA ID number (13 digits)</label>
+          <input style={inp} type="text" value={newPt.id_number||""} placeholder="e.g. 9801125768098" maxLength={13}
+            onChange={e=>{
+              const val=e.target.value.replace(/\D/g,"").slice(0,13);
+              const dob=val.length>=6?parseSaId(val):null;
+              setNewPt(v=>({...v,id_number:val,...(dob?{dob}:{})}));
+            }}/>
+          {newPt.id_number&&newPt.id_number.length===13&&<div style={{fontSize:11,color:"var(--color-text-success)",marginTop:3}}>✓ Valid length · DOB auto-filled from ID</div>}
+          {newPt.id_number&&newPt.id_number.length>0&&newPt.id_number.length<13&&<div style={{fontSize:11,color:"var(--color-text-warning)",marginTop:3}}>{13-newPt.id_number.length} digits remaining</div>}
+        </div>
+        <div style={{marginBottom:10}}>
+          <label style={lbl}>Date of birth</label>
+          <input style={inp} type="date" value={newPt.dob||""} onChange={e=>setNewPt(v=>({...v,dob:e.target.value}))}/>
+          <div style={{fontSize:11,color:"var(--color-text-tertiary)",marginTop:3}}>Auto-filled from SA ID. Edit if needed.</div>
+        </div>
         {sec("Contact")}
-        {row2(fld("Phone","phone",newPt,setNewPt,"tel","071 234 5678"),fld("Email","email",newPt,setNewPt,"email","optional"))}
-        {fld("Physical address","address",newPt,setNewPt,"text","Street, suburb, postal code")}
+        <div style={{marginBottom:10}}>
+          <label style={lbl}>Phone number (with country code)</label>
+          <input style={inp} type="tel" value={newPt.phone||""} placeholder="+27605528414"
+            onBlur={e=>setNewPt(v=>({...v,phone:fmtPhone(e.target.value)}))}
+            onChange={e=>setNewPt(v=>({...v,phone:e.target.value}))}/>
+          <div style={{fontSize:11,color:"var(--color-text-tertiary)",marginTop:3}}>SA numbers: start with 0 or +27. Auto-converts on exit.</div>
+        </div>
+        {fld("Email","email",newPt,setNewPt,"email","optional")}
+        {sec("Address")}
+        {fld("Address line 1","address_line1",newPt,setNewPt,"text","Street number and name")}
+        {fld("Address line 2","address_line2",newPt,setNewPt,"text","Suburb / complex / unit")}
+        {fld("Address line 3","address_line3",newPt,setNewPt,"text","City / town")}
+        {row2(fld("Province","address_province",newPt,setNewPt,"text","e.g. Gauteng"),fld("Postal code","address_postal",newPt,setNewPt,"text","e.g. 2196"))}
         {sec("Medical aid")}
         {row2(fld("Medical aid name","aid_name",newPt,setNewPt,"text","e.g. Discovery Health"),fld("Medical aid number","aid_number",newPt,setNewPt,"text","e.g. DH-8821334"))}
         {fld("Dependant code","dependant_code",newPt,setNewPt,"text","00 = main, 01 = first dependant")}
         {sec("System reference")}
         {fld("Dispensing system profile number","disp_profile_no",newPt,setNewPt,"text","e.g. DISP-4421")}
         {sec("Emergency contact")}
-        {row2(fld("Next of kin name","nok_name",newPt,setNewPt,"text","Full name"),fld("Next of kin phone","nok_phone",newPt,setNewPt,"tel","e.g. 082 111 2222"))}
+        {row2(fld("Next of kin name","nok_name",newPt,setNewPt,"text","Full name"),fld("Next of kin phone","nok_phone",newPt,setNewPt,"tel","e.g. +27821112222"))}
         <button onClick={addPatient} disabled={loading} style={{marginTop:8,padding:"10px 20px",fontSize:14,fontWeight:500,borderRadius:8,width:"100%",background:"var(--color-background-info)",color:"var(--color-text-info)",border:"1px solid var(--color-border-info)",cursor:"pointer",opacity:loading?.6:1}}>{loading?"Saving…":"Add patient"}</button>
       </div>}
 
