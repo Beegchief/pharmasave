@@ -1,168 +1,182 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>PharmaSave</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css"/>
-  <style>
-    *{box-sizing:border-box;margin:0;padding:0}
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
-    body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:#f0f2f5;color:#1a2235;min-height:100vh}
-    :root{
-      --navy:#1a2235;--navy-mid:#243049;--navy-light:#2e3d5e;
-      --gold:#c9a84c;--gold-light:#e8c97a;--gold-pale:#fdf6e3;
-      --surface:#ffffff;--surface-2:#f7f8fc;--surface-3:#eef0f6;
-      --text-1:#1a2235;--text-2:#4a5568;--text-3:#8896ab;
-      --border:#e2e6f0;--border-2:#d0d6e8;
-      --green:#0e9f6e;--green-bg:#ecfdf5;--green-border:#6ee7b7;
-      --red:#e53e3e;--red-bg:#fff5f5;--red-border:#feb2b2;
-      --amber:#c05621;--amber-bg:#fffaf0;--amber-border:#f6ad55;
-      --blue:#2b6cb0;--blue-bg:#ebf8ff;--blue-border:#90cdf4;
-      --color-text-primary:#1a2235;--color-text-secondary:#4a5568;--color-text-tertiary:#8896ab;
-      --color-text-info:#2b6cb0;--color-text-success:#0e9f6e;--color-text-warning:#c05621;--color-text-danger:#e53e3e;
-      --color-text-purple:#6b46c1;--color-text-teal:#0d9488;--color-text-amber:#c05621;
-      --color-background-primary:#ffffff;--color-background-secondary:#f7f8fc;
-      --color-background-info:#ebf8ff;--color-background-success:#ecfdf5;
-      --color-background-warning:#fffaf0;--color-background-danger:#fff5f5;
-      --color-background-purple:#f5f3ff;--color-background-teal:#f0fdfa;--color-background-amber:#fffaf0;
-      --color-border-primary:#e2e6f0;--color-border-secondary:#d0d6e8;--color-border-tertiary:#e2e6f0;
-      --color-border-info:#90cdf4;--color-border-success:#6ee7b7;--color-border-warning:#f6ad55;
-      --color-border-danger:#feb2b2;--color-border-purple:#c4b5fd;--color-border-teal:#99f6e4;--color-border-amber:#f6ad55;
-      --font-sans:'Inter',system-ui,-apple-system,sans-serif;--font-mono:'Courier New',monospace;
-      --radius-sm:6px;--radius-md:10px;--radius-lg:14px;
-      --shadow-sm:0 1px 3px rgba(26,34,53,0.08);--shadow-md:0 4px 16px rgba(26,34,53,0.10);
-    }
-    @keyframes spin{to{transform:rotate(360deg)}}
-    @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
-    .page-wrap{max-width:720px;margin:0 auto;padding:0 16px 40px}
-    .card{background:var(--surface);border-radius:var(--radius-lg);border:1px solid var(--border);box-shadow:var(--shadow-sm)}
-    .header-bar{background:var(--navy);border-radius:var(--radius-lg);padding:14px 20px;margin-bottom:20px;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow-md)}
-    .logo-mark{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--gold) 0%,var(--gold-light) 100%);display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer}
-    .logo-mark i{font-size:18px;color:var(--navy);font-weight:600}
-    .brand-name{font-size:17px;font-weight:600;color:#ffffff;cursor:pointer;letter-spacing:-0.2px}
-    .brand-sub{font-size:11px;color:rgba(255,255,255,0.45);letter-spacing:0.3px;margin-top:1px}
-    .user-chip{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:3px}
-    .user-name{font-size:13px;font-weight:500;color:#fff}
-    .role-pill{font-size:10px;font-weight:500;padding:2px 8px;border-radius:20px;letter-spacing:0.3px}
-    .role-admin{background:rgba(201,168,76,0.22);color:var(--gold-light);border:1px solid rgba(201,168,76,0.35)}
-    .role-dispenser{background:rgba(99,179,237,0.18);color:#90cdf4;border:1px solid rgba(99,179,237,0.3)}
-    .role-locum{background:rgba(246,173,85,0.18);color:#f6ad55;border:1px solid rgba(246,173,85,0.3)}
-    .signout-btn{padding:6px 12px;font-size:12px;font-weight:500;border-radius:var(--radius-sm);border:1px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.7);cursor:pointer;transition:background 0.15s;letter-spacing:0.1px}
-    .signout-btn:hover{background:rgba(255,255,255,0.15)}
-    .tab-bar{display:flex;gap:2px;margin-bottom:20px;background:var(--surface-3);padding:4px;border-radius:var(--radius-md);border:1px solid var(--border)}
-    .tab-btn{flex:1;padding:8px 10px;font-size:13px;font-weight:500;border:none;border-radius:var(--radius-sm);background:transparent;color:var(--text-2);cursor:pointer;transition:all 0.15s;white-space:nowrap}
-    .tab-btn.active{background:var(--surface);color:var(--navy);box-shadow:var(--shadow-sm);border:1px solid var(--border)}
-    .search-wrap{position:relative;margin-bottom:16px}
-    .search-wrap i{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:16px;color:var(--text-3)}
-    .search-input{width:100%;padding:10px 12px 10px 38px;font-size:14px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--surface);color:var(--text-1);outline:none;font-family:var(--font-sans);transition:border 0.15s}
-    .search-input:focus{border-color:var(--navy-light);box-shadow:0 0 0 3px rgba(46,61,94,0.08)}
-    .pt-row{display:flex;align-items:center;gap:12px;padding:13px 16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);margin-bottom:8px;cursor:pointer;transition:all 0.15s;animation:fadeIn 0.2s ease}
-    .pt-row:hover{border-color:var(--border-2);box-shadow:var(--shadow-sm);transform:translateY(-1px)}
-    .avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:600;font-size:14px}
-    .av-navy{background:var(--navy);color:var(--gold-light)}
-    .av-blue{background:var(--blue-bg);color:var(--blue)}
-    .section-title{font-size:10px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:0.8px;margin:18px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
-    .profile-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px;margin-bottom:16px;box-shadow:var(--shadow-sm)}
-    .profile-header{display:flex;gap:14px;align-items:flex-start;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--border)}
-    .pt-name{font-size:18px;font-weight:600;color:var(--navy);letter-spacing:-0.3px}
-    .pt-meta{font-size:12px;color:var(--text-3);margin-top:3px}
-    .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 20px;font-size:13px}
-    .info-item label{display:block;font-size:10px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px}
-    .rx-card{border:1px solid var(--border);border-radius:var(--radius-md);margin-bottom:8px;overflow:hidden;background:var(--surface);animation:fadeIn 0.2s ease}
-    .rx-header{display:flex;align-items:center;gap:10px;padding:12px 16px;cursor:pointer;transition:background 0.1s}
-    .rx-header:hover{background:var(--surface-2)}
-    .rx-id{font-weight:600;font-size:13px;color:var(--navy);letter-spacing:-0.1px}
-    .rx-sub{font-size:12px;color:var(--text-3);margin-top:2px}
-    .rx-body{border-top:1px solid var(--border);padding:14px 16px;background:var(--surface-2)}
-    .field-label{font-size:10px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px}
-    .upload-btn{width:100%;padding:11px;font-size:13px;font-weight:500;border-radius:var(--radius-md);border:1.5px dashed var(--border-2);background:transparent;color:var(--blue);cursor:pointer;transition:all 0.15s;display:flex;align-items:center;justify-content:center;gap:8px}
-    .upload-btn:hover{background:var(--blue-bg);border-color:var(--blue-border)}
-    .btn-primary{padding:10px 20px;font-size:14px;font-weight:500;border-radius:var(--radius-md);background:var(--navy);color:#fff;border:none;cursor:pointer;transition:all 0.15s;font-family:var(--font-sans);letter-spacing:-0.1px}
-    .btn-primary:hover{background:var(--navy-mid)}
-    .btn-primary:disabled{opacity:0.5;cursor:not-allowed}
-    .btn-gold{background:var(--gold);color:var(--navy);border:none}
-    .btn-gold:hover{background:var(--gold-light)}
-    .btn-ghost{background:transparent;border:1px solid var(--border-2);color:var(--text-2);font-size:13px;font-weight:500;padding:8px 16px;border-radius:var(--radius-sm);cursor:pointer;font-family:var(--font-sans)}
-    .btn-ghost:hover{background:var(--surface-2)}
-    .btn-danger{background:var(--red-bg);border:1px solid var(--red-border);color:var(--red);font-size:13px;padding:5px 10px;border-radius:var(--radius-sm);cursor:pointer;font-family:var(--font-sans)}
-    .form-input{width:100%;padding:9px 12px;font-size:14px;border:1px solid var(--border-2);border-radius:var(--radius-sm);background:var(--surface);color:var(--text-1);font-family:var(--font-sans);outline:none;transition:border 0.15s}
-    .form-input:focus{border-color:var(--navy-light);box-shadow:0 0 0 3px rgba(46,61,94,0.08)}
-    .form-label{font-size:12px;font-weight:500;color:var(--text-2);margin-bottom:4px;display:block}
-    .form-hint{font-size:11px;color:var(--text-3);margin-top:3px}
-    .badge{font-size:10px;font-weight:600;padding:3px 8px;border-radius:20px;letter-spacing:0.2px}
-    .badge-chronic{background:#fff8e6;color:#92600a;border:1px solid #f6d860}
-    .badge-expired{background:var(--red-bg);color:var(--red);border:1px solid var(--red-border)}
-    .badge-repeats{background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-border)}
-    .toast{position:fixed;top:20px;right:20px;z-index:9999;padding:12px 18px;border-radius:var(--radius-md);font-size:13px;font-weight:500;box-shadow:var(--shadow-md);animation:fadeIn 0.2s ease}
-    .toast-success{background:#1a2235;color:#a3e6c5;border:1px solid rgba(163,230,197,0.2)}
-    .toast-error{background:#fff5f5;color:var(--red);border:1px solid var(--red-border)}
-    .progress-bar{position:fixed;top:0;left:0;right:0;height:2px;background:var(--gold);z-index:9999}
-    .scan-step{text-align:center;padding:24px 0 12px}
-    .step-icon{width:56px;height:56px;border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
-    .step-icon-navy{background:var(--navy)}
-    .step-icon-gold{background:var(--gold-pale);border:1px solid var(--gold)}
-    .step-title{font-size:16px;font-weight:600;color:var(--navy);margin-bottom:6px;letter-spacing:-0.2px}
-    .step-sub{font-size:13px;color:var(--text-2);line-height:1.6;margin-bottom:20px}
-    .staff-row{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);margin-bottom:6px}
-    .pin-display{font-family:var(--font-mono);font-size:15px;font-weight:600;letter-spacing:0.2em}
-    .empty-state{text-align:center;color:var(--text-3);padding:36px 0;font-size:14px}
-    .changes-box{padding:10px 14px;background:var(--amber-bg);border-radius:var(--radius-sm);border-left:3px solid var(--gold)}
-    .img-card{border-radius:var(--radius-sm);overflow:hidden;border:1px solid var(--border)}
-    .img-toolbar{font-size:11px;padding:5px 10px;background:var(--surface-2);color:var(--text-2);display:flex;justify-content:space-between;align-items:center;font-weight:500;border-bottom:1px solid var(--border)}
-    .icon-btn{background:none;border:none;cursor:pointer;font-size:15px;color:var(--text-2);padding:3px 6px;border-radius:4px;transition:background 0.1s}
-    .icon-btn:hover{background:var(--surface-3)}
-    .share-tray{padding:8px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;gap:6px}
-    .share-wa{flex:1;padding:7px;font-size:12px;font-weight:500;border-radius:var(--radius-sm);border:1px solid #25d366;background:#e7fbe9;color:#128c3e;cursor:pointer;font-family:var(--font-sans)}
-    .share-email{flex:1;padding:7px;font-size:12px;font-weight:500;border-radius:var(--radius-sm);border:1px solid var(--blue-border);background:var(--blue-bg);color:var(--blue);cursor:pointer;font-family:var(--font-sans)}
-    .lightbox{position:fixed;inset:0;background:rgba(10,14,26,0.92);z-index:1000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px}
-    .lightbox-actions{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;justify-content:center}
-    .lightbox-btn{padding:8px 14px;border-radius:var(--radius-sm);border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.1);color:#fff;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:5px;font-family:var(--font-sans)}
-    .modal-overlay{position:fixed;inset:0;background:rgba(10,14,26,0.6);z-index:500;display:flex;align-items:flex-start;justify-content:center;padding:24px 16px;overflow-y:auto}
-    .modal-box{background:var(--surface);border-radius:var(--radius-lg);width:100%;max-width:520px;padding:22px;box-shadow:var(--shadow-md)}
-    .divider{height:1px;background:var(--border);margin:14px 0}
-    select.form-input{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24'%3E%3Cpath fill='%238896ab' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
-  </style>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>PharmaSave</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:#1a2235;color:#e8e0d0;min-height:100vh}
+:root{
+  --navy:#1a2235;--navy-mid:#243049;--navy-light:#2e3d5e;--navy-card:#1f2b42;
+  --gold:#c9a84c;--gold-light:#e8c97a;--gold-pale:rgba(201,168,76,0.12);--gold-border:rgba(201,168,76,0.3);
+  --surface:rgba(255,255,255,0.06);--surface-2:rgba(255,255,255,0.04);--surface-3:rgba(255,255,255,0.08);
+  --surface-solid:#1f2b42;--surface-solid-2:#243049;
+  --text-1:#f0ebe0;--text-2:#b8afa0;--text-3:#7a8499;
+  --border:rgba(255,255,255,0.1);--border-2:rgba(201,168,76,0.2);
+  --green:#34d399;--green-bg:rgba(52,211,153,0.12);--green-border:rgba(52,211,153,0.3);
+  --red:#f87171;--red-bg:rgba(248,113,113,0.12);--red-border:rgba(248,113,113,0.3);
+  --amber:#f6ad55;--amber-bg:rgba(246,173,85,0.12);--amber-border:rgba(246,173,85,0.3);
+  --blue:#60a5fa;--blue-bg:rgba(96,165,250,0.12);--blue-border:rgba(96,165,250,0.3);
+  --radius-sm:6px;--radius-md:10px;--radius-lg:14px;
+  --shadow-sm:0 1px 3px rgba(0,0,0,0.3);--shadow-md:0 4px 20px rgba(0,0,0,0.4);
+  --font-sans:'Inter',system-ui,sans-serif;--font-mono:'Courier New',monospace;
+  /* legacy compat vars */
+  --color-text-primary:#f0ebe0;--color-text-secondary:#b8afa0;--color-text-tertiary:#7a8499;
+  --color-text-info:#60a5fa;--color-text-success:#34d399;--color-text-warning:#f6ad55;--color-text-danger:#f87171;
+  --color-background-primary:rgba(255,255,255,0.06);--color-background-secondary:rgba(255,255,255,0.04);
+  --color-background-info:rgba(96,165,250,0.12);--color-background-success:rgba(52,211,153,0.12);
+  --color-background-warning:rgba(246,173,85,0.12);--color-background-danger:rgba(248,113,113,0.12);
+  --color-border-secondary:rgba(255,255,255,0.12);--color-border-tertiary:rgba(255,255,255,0.08);
+  --color-border-info:rgba(96,165,250,0.3);--color-border-success:rgba(52,211,153,0.3);
+  --color-border-warning:rgba(246,173,85,0.3);--color-border-danger:rgba(248,113,113,0.3);
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+
+.page-wrap{max-width:720px;margin:0 auto;padding:0 16px 48px}
+
+/* header */
+.header-bar{background:linear-gradient(135deg,#1f2b42 0%,#243049 100%);border-radius:var(--radius-lg);padding:14px 20px;margin-bottom:20px;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow-md);border:1px solid var(--gold-border)}
+.logo-mark{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--gold),var(--gold-light));display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;box-shadow:0 2px 8px rgba(201,168,76,0.3)}
+.brand-name{font-size:17px;font-weight:600;color:#fff;cursor:pointer;letter-spacing:-0.2px}
+.brand-sub{font-size:10px;color:var(--gold);letter-spacing:1.2px;margin-top:1px;text-transform:uppercase}
+.user-chip{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:3px}
+.user-name{font-size:13px;font-weight:500;color:#fff}
+.role-pill{font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;letter-spacing:0.3px}
+.role-admin{background:rgba(201,168,76,0.2);color:var(--gold-light);border:1px solid var(--gold-border)}
+.role-dispenser{background:rgba(96,165,250,0.15);color:#93c5fd;border:1px solid rgba(96,165,250,0.25)}
+.role-locum{background:rgba(246,173,85,0.15);color:#f6ad55;border:1px solid rgba(246,173,85,0.25)}
+.signout-btn{padding:6px 12px;font-size:12px;font-weight:500;border-radius:var(--radius-sm);border:1px solid rgba(201,168,76,0.25);background:rgba(201,168,76,0.08);color:var(--gold-light);cursor:pointer;letter-spacing:0.1px}
+
+/* tabs */
+.tab-bar{display:flex;gap:2px;margin-bottom:20px;background:rgba(255,255,255,0.04);padding:4px;border-radius:var(--radius-md);border:1px solid var(--border)}
+.tab-btn{flex:1;padding:8px 10px;font-size:13px;font-weight:500;border:none;border-radius:var(--radius-sm);background:transparent;color:var(--text-3);cursor:pointer;transition:all 0.15s;white-space:nowrap;font-family:var(--font-sans)}
+.tab-btn.active{background:linear-gradient(135deg,rgba(201,168,76,0.18),rgba(201,168,76,0.08));color:var(--gold-light);border:1px solid var(--gold-border);box-shadow:0 1px 4px rgba(0,0,0,0.2)}
+
+/* search */
+.search-wrap{position:relative;margin-bottom:16px}
+.search-wrap i{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:16px;color:var(--text-3)}
+.search-input{width:100%;padding:11px 12px 11px 40px;font-size:14px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--surface-solid);color:var(--text-1);outline:none;font-family:var(--font-sans);transition:border 0.15s}
+.search-input:focus{border-color:var(--gold-border);box-shadow:0 0 0 3px rgba(201,168,76,0.1)}
+.search-input::placeholder{color:var(--text-3)}
+
+/* patient row */
+.pt-row{display:flex;align-items:center;gap:12px;padding:13px 16px;background:var(--surface-solid);border:1px solid var(--border);border-radius:var(--radius-md);margin-bottom:8px;cursor:pointer;transition:all 0.15s;animation:fadeIn 0.2s ease}
+.pt-row:hover{border-color:var(--gold-border);background:var(--surface-solid-2);transform:translateY(-1px)}
+.avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:700;font-size:13px;background:linear-gradient(135deg,var(--navy-light),var(--navy-mid));color:var(--gold-light);border:1px solid var(--gold-border)}
+
+/* profile card */
+.profile-card{background:var(--surface-solid);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px;margin-bottom:16px;box-shadow:var(--shadow-sm)}
+.profile-header{display:flex;gap:14px;align-items:flex-start;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--border)}
+.pt-name{font-size:18px;font-weight:600;color:var(--text-1);letter-spacing:-0.3px}
+.pt-meta{font-size:12px;color:var(--text-3);margin-top:3px}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 20px;font-size:13px}
+.info-item label{display:block;font-size:10px;font-weight:600;color:var(--gold);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:3px;opacity:0.8}
+.info-item span{color:var(--text-1)}
+
+/* section title */
+.section-title{font-size:10px;font-weight:600;color:var(--gold);text-transform:uppercase;letter-spacing:1px;margin:18px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--gold-border);opacity:0.8}
+
+/* rx cards */
+.rx-card{border:1px solid var(--border);border-radius:var(--radius-md);margin-bottom:8px;overflow:hidden;background:var(--surface-solid);animation:fadeIn 0.2s ease}
+.rx-header{display:flex;align-items:center;gap:10px;padding:12px 16px;cursor:pointer;transition:background 0.1s}
+.rx-header:hover{background:var(--surface-solid-2)}
+.rx-id{font-weight:600;font-size:13px;color:var(--text-1)}
+.rx-sub{font-size:12px;color:var(--text-3);margin-top:2px}
+.rx-body{border-top:1px solid var(--border);padding:14px 16px;background:rgba(0,0,0,0.15)}
+.field-label{font-size:10px;font-weight:600;color:var(--gold);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px;opacity:0.8}
+
+/* buttons */
+.btn-primary{padding:10px 20px;font-size:14px;font-weight:600;border-radius:var(--radius-md);background:linear-gradient(135deg,var(--gold),var(--gold-light));color:var(--navy);border:none;cursor:pointer;font-family:var(--font-sans);letter-spacing:-0.1px;box-shadow:0 2px 8px rgba(201,168,76,0.25)}
+.btn-primary:hover{background:linear-gradient(135deg,var(--gold-light),var(--gold));box-shadow:0 4px 12px rgba(201,168,76,0.35)}
+.btn-primary:disabled{opacity:0.5;cursor:not-allowed}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text-2);font-size:13px;font-weight:500;padding:8px 16px;border-radius:var(--radius-sm);cursor:pointer;font-family:var(--font-sans)}
+.btn-ghost:hover{background:var(--surface-3);border-color:var(--gold-border);color:var(--gold-light)}
+.btn-danger{background:var(--red-bg);border:1px solid var(--red-border);color:var(--red);font-size:13px;padding:5px 10px;border-radius:var(--radius-sm);cursor:pointer;font-family:var(--font-sans)}
+.upload-btn{width:100%;padding:11px;font-size:13px;font-weight:500;border-radius:var(--radius-md);border:1.5px dashed var(--gold-border);background:var(--gold-pale);color:var(--gold-light);cursor:pointer;transition:all 0.15s;display:flex;align-items:center;justify-content:center;gap:8px;font-family:var(--font-sans)}
+.upload-btn:hover{background:rgba(201,168,76,0.2);border-color:var(--gold)}
+.icon-btn{background:none;border:none;cursor:pointer;font-size:15px;color:var(--text-3);padding:4px 6px;border-radius:4px;transition:all 0.1s}
+.icon-btn:hover{background:var(--surface-3);color:var(--gold-light)}
+
+/* forms */
+.form-input,.form-select{width:100%;padding:9px 12px;font-size:14px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-solid);color:var(--text-1);font-family:var(--font-sans);outline:none;transition:border 0.15s}
+.form-input:focus,.form-select:focus{border-color:var(--gold-border);box-shadow:0 0 0 3px rgba(201,168,76,0.1)}
+.form-input::placeholder{color:var(--text-3)}
+.form-label{font-size:12px;font-weight:500;color:var(--text-2);margin-bottom:4px;display:block}
+.form-hint{font-size:11px;color:var(--text-3);margin-top:3px}
+.inp-legacy{width:100%;padding:8px 10px;font-size:14px;border:1px solid var(--border);border-radius:8px;background:var(--surface-solid);color:var(--text-1);box-sizing:border-box;outline:none;font-family:var(--font-sans)}
+.inp-legacy:focus{border-color:var(--gold-border)}
+.inp-legacy::placeholder{color:var(--text-3)}
+
+/* badges */
+.badge{font-size:10px;font-weight:600;padding:3px 8px;border-radius:20px;letter-spacing:0.2px}
+.badge-chronic{background:rgba(246,173,85,0.15);color:#f6ad55;border:1px solid rgba(246,173,85,0.3)}
+.badge-expired{background:var(--red-bg);color:var(--red);border:1px solid var(--red-border)}
+.badge-repeats{background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-border)}
+
+/* toast */
+.toast{position:fixed;top:20px;right:20px;z-index:9999;padding:12px 18px;border-radius:var(--radius-md);font-size:13px;font-weight:500;box-shadow:var(--shadow-md);animation:fadeIn 0.2s ease}
+.toast-success{background:linear-gradient(135deg,#1f2b42,#243049);color:var(--gold-light);border:1px solid var(--gold-border)}
+.toast-error{background:var(--red-bg);color:var(--red);border:1px solid var(--red-border)}
+.progress-bar{position:fixed;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--gold),var(--gold-light));z-index:9999}
+
+/* modals */
+.modal-overlay{position:fixed;inset:0;background:rgba(10,14,26,0.75);z-index:500;display:flex;align-items:flex-start;justify-content:center;padding:24px 16px;overflow-y:auto;backdrop-filter:blur(2px)}
+.modal-box{background:#1f2b42;border:1px solid var(--gold-border);border-radius:var(--radius-lg);width:100%;max-width:520px;padding:22px;box-shadow:var(--shadow-md);animation:slideUp 0.2s ease}
+.divider{height:1px;background:var(--border);margin:14px 0}
+
+/* staff */
+.staff-row{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--surface-solid);border:1px solid var(--border);border-radius:var(--radius-md);margin-bottom:6px}
+
+/* empty state */
+.empty-state{text-align:center;color:var(--text-3);padding:40px 0;font-size:14px}
+
+/* changes box */
+.changes-box{padding:10px 14px;background:var(--amber-bg);border-radius:var(--radius-sm);border-left:3px solid var(--gold)}
+
+/* image cards */
+.img-card{border-radius:var(--radius-sm);overflow:hidden;border:1px solid var(--border)}
+
+/* scan overlay */
+.scan-screen{background:linear-gradient(180deg,#0d1420 0%,#1a2235 100%);min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:20px 16px;overflow-y:auto}
+
+/* lightbox */
+.lightbox{position:fixed;inset:0;background:rgba(5,8,18,0.95);z-index:1000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)}
+</style>
 </head>
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const {useState,useRef,useEffect,useCallback}=React;
+const {useState,useRef,useEffect}=React;
 
 const SB_URL="https://zqputthzhuskzqonnvox.supabase.co";
 const SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpxcHV0dGh6aHVza3pxb25udm94Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyMjkyMjgsImV4cCI6MjA5NDgwNTIyOH0.UslOXizMcv83_dJUlrvf36oBiKKHU_Z9-s1e1VJCePg";
 
 const sb={
   async query(table,method="GET",body=null,filters=""){
-    const res=await fetch(SB_URL+"/rest/v1/"+table+filters,{
-      method,
-      headers:{"apikey":SB_KEY,"Authorization":"Bearer "+SB_KEY,"Content-Type":"application/json","Prefer":method==="POST"||method==="PATCH"?"return=representation":""},
-      body:body?JSON.stringify(body):null
-    });
+    const res=await fetch(SB_URL+"/rest/v1/"+table+filters,{method,headers:{"apikey":SB_KEY,"Authorization":"Bearer "+SB_KEY,"Content-Type":"application/json","Prefer":method==="POST"||method==="PATCH"?"return=representation":""},body:body?JSON.stringify(body):null});
     if(!res.ok){const e=await res.text();throw new Error(e);}
     return res.status===204?null:res.json();
   },
   async uploadFile(path,file){
-    const res=await fetch(SB_URL+"/storage/v1/object/scripts/"+path,{
-      method:"POST",headers:{"apikey":SB_KEY,"Authorization":"Bearer "+SB_KEY,"Content-Type":file.type},body:file
-    });
+    const res=await fetch(SB_URL+"/storage/v1/object/scripts/"+path,{method:"POST",headers:{"apikey":SB_KEY,"Authorization":"Bearer "+SB_KEY,"Content-Type":file.type},body:file});
     if(!res.ok)throw new Error(await res.text());
   },
   async signedUrl(path){
-    const res=await fetch(SB_URL+"/storage/v1/object/sign/scripts/"+path,{
-      method:"POST",headers:{"apikey":SB_KEY,"Authorization":"Bearer "+SB_KEY,"Content-Type":"application/json"},
-      body:JSON.stringify({expiresIn:3600})
-    });
+    const res=await fetch(SB_URL+"/storage/v1/object/sign/scripts/"+path,{method:"POST",headers:{"apikey":SB_KEY,"Authorization":"Bearer "+SB_KEY,"Content-Type":"application/json"},body:JSON.stringify({expiresIn:3600})});
     if(!res.ok)return null;
     const data=await res.json();
     return SB_URL+"/storage/v1"+data.signedURL;
   }
 };
 
-const STAFF=[
+const INITIAL_STAFF=[
   {id:"S01",name:"Deevesh Govind",role:"admin",title:"Responsible Pharmacist",pin:"11111"},
   {id:"S02",name:"Munya Ngandu",role:"admin",title:"Admin",pin:"22222"},
   {id:"S03",name:"Bradley Kunene",role:"dispenser",title:"Pharmacist Intern",pin:"33333"},
@@ -173,14 +187,8 @@ const STAFF=[
   {id:"S08",name:"Priya Bhana",role:"locum",title:"Locum Pharmacist",pin:null},
   {id:"S09",name:"Maria Jila",role:"locum",title:"Locum Pharmacist",pin:null},
 ];
-function dailyPin(id){
-  const today=new Date().toISOString().slice(0,10).replace(/-/g,"");
-  let s=0;for(let i=0;i<id.length;i++)s+=id.charCodeAt(i);
-  for(let i=0;i<today.length;i++)s=(s*31+today.charCodeAt(i))&0xfffff;
-  return String(10000+(s%90000));
-}
+function dailyPin(id){const t=new Date().toISOString().slice(0,10).replace(/-/g,"");let s=0;for(let i=0;i<id.length;i++)s+=id.charCodeAt(i);for(let i=0;i<t.length;i++)s=(s*31+t.charCodeAt(i))&0xfffff;return String(10000+(s%90000));}
 function getPin(s){return s.role==="locum"?dailyPin(s.id):s.pin;}
-const RC={admin:"purple",dispenser:"teal",locum:"amber"};
 const RL={admin:"Admin",dispenser:"Dispenser",locum:"Locum"};
 function can(u,a){if(!u)return false;const r=u.role;if(r==="admin")return true;if(a==="upload"||a==="search")return true;if((a==="addPatient"||a==="editRecord")&&r==="dispenser")return true;return false;}
 function fmtDate(d){if(!d)return"—";const[y,m,day]=d.split("-");return day+"/"+m+"/"+y;}
@@ -188,44 +196,28 @@ function fullName(p){return p.first_name+" "+p.surname;}
 function genPtId(pts){const n=pts.map(p=>parseInt((p.id||"PT0").replace("PT",""),10)).filter(Boolean);return"PT"+String((n.length?Math.max(...n):0)+1).padStart(3,"0");}
 function genRxId(date){return"RX-"+date.replace(/-/g,"")+"-"+String(Math.floor(Math.random()*900)+100);}
 function toBase64(file){return new Promise(res=>{const r=new FileReader();r.onload=()=>res(r.result.split(",")[1]);r.readAsDataURL(file);});}
+function parseSaId(id){if(!id||id.length<6)return null;const yy=id.slice(0,2),mm=id.slice(2,4),dd=id.slice(4,6);if(isNaN(yy+mm+dd))return null;const year=parseInt(yy)<30?"20"+yy:"19"+yy;return year+"-"+mm+"-"+dd;}
+function fmtPhone(val){const d=val.replace(/\D/g,"");if(d.startsWith("27"))return"+"+d;if(d.startsWith("0")&&d.length>=10)return"+27"+d.slice(1);return val;}
 
 async function parseTrailerLabel(b64){
-  const res=await fetch("https://api.anthropic.com/v1/messages",{
-    method:"POST",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,messages:[{role:"user",content:[
-      {type:"image",source:{type:"base64",media_type:"image/jpeg",data:b64}},
-      {type:"text",text:"South African pharmacy trailer label sticker. Extract info, return ONLY JSON: {\"patientSurname\":string,\"patientFirstName\":string|null,\"dispenserName\":string|null,\"medications\":string,\"scriptDate\":string|null,\"totalPrice\":string|null,\"doctor\":string|null} Date: YYYY-MM-DD. Medications comma-separated with qty and strength. ONLY JSON."}
-    ]}]})
-  });
+  const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,messages:[{role:"user",content:[{type:"image",source:{type:"base64",media_type:"image/jpeg",data:b64}},{type:"text",text:'SA pharmacy trailer label. Return ONLY JSON: {"patientSurname":string,"dispenserName":string|null,"medications":string,"scriptDate":string|null,"totalPrice":string|null,"doctor":string|null} Date: YYYY-MM-DD. ONLY JSON.'}]}]})});
   const data=await res.json();
   const text=(data.content||[]).find(b=>b.type==="text")?.text||"{}";
   return JSON.parse(text.replace(/```json|```/g,"").trim());
 }
 
-const inp={width:"100%",padding:"8px 10px",fontSize:14,border:"1px solid var(--color-border-secondary)",borderRadius:8,background:"var(--color-background-primary)",color:"var(--color-text-primary)",boxSizing:"border-box",outline:"none"};
-const lbl={fontSize:12,color:"var(--color-text-secondary)",marginBottom:3,display:"block"};
-const sec=t=><div style={{fontSize:11,fontWeight:500,color:"var(--color-text-tertiary)",textTransform:"uppercase",letterSpacing:"0.06em",margin:"14px 0 8px",borderBottom:"1px solid var(--color-border-tertiary)",paddingBottom:4}}>{t}</div>;
-const fld=(label,key,val,set,type="text",ph="",req=false,maxLen=null)=>(<div style={{marginBottom:10}}><label style={lbl}>{label}{req&&<span style={{color:"var(--color-text-danger)"}}> *</span>}</label><input style={inp} type={type} value={val[key]||""} placeholder={ph} maxLength={maxLen||undefined} onChange={e=>set(v=>({...v,[key]:e.target.value}))}/></div>);
-
-// Parse SA ID: YYMMDD → full DOB
-function parseSaId(id){
-  if(!id||id.length<6)return null;
-  const yy=id.slice(0,2),mm=id.slice(2,4),dd=id.slice(4,6);
-  if(isNaN(yy+mm+dd))return null;
-  const year=parseInt(yy)<30?"20"+yy:"19"+yy;
-  return year+"-"+mm+"-"+dd;
-}
-// Format phone to +27
-function fmtPhone(val){
-  const digits=val.replace(/\D/g,"");
-  if(digits.startsWith("27"))return"+"+digits;
-  if(digits.startsWith("0")&&digits.length>=10)return"+27"+digits.slice(1);
-  return val;
-}
+// ── Shared form helpers ──────────────────────────────────────────────────────
 const row2=(a,b)=><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>{a}{b}</div>;
-const badge=(label,color)=><span style={{fontSize:11,fontWeight:500,padding:"2px 8px",borderRadius:20,background:"var(--color-background-"+color+")",color:"var(--color-text-"+color+")",border:"1px solid var(--color-border-"+color+")"}}>{label}</span>;
+function Fld({label,name,val,set,type="text",ph="",req,hint,maxLen,children}){
+  return <div style={{marginBottom:10}}>
+    <label className="form-label">{label}{req&&<span style={{color:"var(--red)"}}> *</span>}</label>
+    {children||<input className="inp-legacy" type={type} value={val[name]||""} placeholder={ph} maxLength={maxLen}
+      onChange={e=>set(v=>({...v,[name]:e.target.value}))}/>}
+    {hint&&<div className="form-hint">{hint}</div>}
+  </div>;
+}
 
-// ── DocScanner ──
+// ── DocScanner ───────────────────────────────────────────────────────────────
 function DocScanner({imageSrc,onAccept,onRetake}){
   const canvasRef=useRef();
   const[corners,setCorners]=useState(null);
@@ -237,9 +229,10 @@ function DocScanner({imageSrc,onAccept,onRetake}){
 
   useEffect(()=>{
     const img=new Image();
+    img.crossOrigin="anonymous";
     img.onload=()=>{
       setImgEl(img);
-      const w=img.naturalWidth,h=img.naturalHeight,p=0.05;
+      const w=img.naturalWidth,h=img.naturalHeight,p=0.06;
       setCorners([{x:p*w,y:p*h},{x:(1-p)*w,y:p*h},{x:(1-p)*w,y:(1-p)*h},{x:p*w,y:(1-p)*h}]);
     };
     img.src=imageSrc;
@@ -248,51 +241,38 @@ function DocScanner({imageSrc,onAccept,onRetake}){
   useEffect(()=>{
     if(!imgEl||!corners||mode!=="crop")return;
     const canvas=canvasRef.current;if(!canvas)return;
-    const maxW=Math.min(window.innerWidth-32,600);
+    const maxW=Math.min(window.innerWidth-40,600);
     const scale=maxW/imgEl.naturalWidth;
     canvas.width=maxW;canvas.height=imgEl.naturalHeight*scale;
     const ctx=canvas.getContext("2d");
     ctx.drawImage(imgEl,0,0,canvas.width,canvas.height);
     const sc=corners.map(c=>({x:c.x*scale,y:c.y*scale}));
-    // Dark overlay outside crop area using composite clipping
+    // Dark overlay outside, clear inside
     ctx.save();
-    ctx.fillStyle="rgba(0,0,0,0.55)";
+    ctx.fillStyle="rgba(0,0,0,0.6)";
     ctx.fillRect(0,0,canvas.width,canvas.height);
     ctx.globalCompositeOperation="destination-out";
-    ctx.beginPath();
-    ctx.moveTo(sc[0].x,sc[0].y);
-    sc.forEach(c=>ctx.lineTo(c.x,c.y));
-    ctx.closePath();
-    ctx.fill();
+    ctx.beginPath();ctx.moveTo(sc[0].x,sc[0].y);sc.forEach(c=>ctx.lineTo(c.x,c.y));ctx.closePath();ctx.fill();
     ctx.restore();
-    // Border lines — white with thin black shadow for visibility on any bg
-    ctx.shadowColor="rgba(0,0,0,0.6)";ctx.shadowBlur=3;
-    ctx.strokeStyle="#ffffff";ctx.lineWidth=2.5;
-    ctx.beginPath();ctx.moveTo(sc[0].x,sc[0].y);
-    sc.forEach(c=>ctx.lineTo(c.x,c.y));ctx.closePath();ctx.stroke();
+    // White border
+    ctx.strokeStyle="#ffffff";ctx.lineWidth=2;ctx.shadowColor="rgba(0,0,0,0.8)";ctx.shadowBlur=4;
+    ctx.beginPath();ctx.moveTo(sc[0].x,sc[0].y);sc.forEach(c=>ctx.lineTo(c.x,c.y));ctx.closePath();ctx.stroke();
     ctx.shadowBlur=0;
-    // Corner handles — large white circle with dark ring, easy to grab
+    // Gold corner brackets
+    const bLen=22;
     sc.forEach((c,i)=>{
-      // Outer dark ring
-      ctx.beginPath();ctx.arc(c.x,c.y,22,0,Math.PI*2);
-      ctx.fillStyle="rgba(0,0,0,0.5)";ctx.fill();
-      // White fill
-      ctx.beginPath();ctx.arc(c.x,c.y,20,0,Math.PI*2);
-      ctx.fillStyle="#ffffff";ctx.fill();
-      // Corner number
-      ctx.fillStyle="#1a2235";ctx.font="bold 13px Inter,sans-serif";
-      ctx.textAlign="center";ctx.textBaseline="middle";
+      const next=sc[(i+1)%4],prev=sc[(i+3)%4];
+      const dx1=next.x-c.x,dy1=next.y-c.y,d1=Math.hypot(dx1,dy1)||1;
+      const dx2=prev.x-c.x,dy2=prev.y-c.y,d2=Math.hypot(dx2,dy2)||1;
+      ctx.strokeStyle="#c9a84c";ctx.lineWidth=4;ctx.lineCap="round";
+      ctx.beginPath();ctx.moveTo(c.x,c.y);ctx.lineTo(c.x+(dx1/d1)*bLen,c.y+(dy1/d1)*bLen);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(c.x,c.y);ctx.lineTo(c.x+(dx2/d2)*bLen,c.y+(dy2/d2)*bLen);ctx.stroke();
+      // Handle circle
+      ctx.beginPath();ctx.arc(c.x,c.y,18,0,Math.PI*2);
+      ctx.fillStyle="rgba(201,168,76,0.85)";ctx.fill();
+      ctx.strokeStyle="#fff";ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle="#1a2235";ctx.font="bold 12px Inter,sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";
       ctx.fillText(i+1,c.x,c.y);
-    });
-    // Corner L-brackets for extra clarity
-    const bLen=18;
-    sc.forEach((c,i)=>{
-      const next=sc[(i+1)%4];const prev=sc[(i+3)%4];
-      const dx1=next.x-c.x,dy1=next.y-c.y,d1=Math.hypot(dx1,dy1);
-      const dx2=prev.x-c.x,dy2=prev.y-c.y,d2=Math.hypot(dx2,dy2);
-      ctx.strokeStyle="#f0b429";ctx.lineWidth=3;ctx.lineCap="round";
-      ctx.beginPath();ctx.moveTo(c.x+(dx1/d1)*28,c.y+(dy1/d1)*28);ctx.lineTo(c.x+(dx1/d1)*28+dx1/d1*bLen,c.y+(dy1/d1)*28+dy1/d1*bLen);ctx.stroke();
-      ctx.beginPath();ctx.moveTo(c.x+(dx2/d2)*28,c.y+(dy2/d2)*28);ctx.lineTo(c.x+(dx2/d2)*28+dx2/d2*bLen,c.y+(dy2/d2)*28+dy2/d2*bLen);ctx.stroke();
     });
   },[imgEl,corners,mode]);
 
@@ -305,16 +285,16 @@ function DocScanner({imageSrc,onAccept,onRetake}){
   function startDrag(e){
     e.preventDefault();
     const canvas=canvasRef.current;
-    const scale=Math.min(window.innerWidth-32,600)/imgEl.naturalWidth;
+    const scale=Math.min(window.innerWidth-40,600)/imgEl.naturalWidth;
     const pos=getPos(e,canvas);
     const sc=corners.map(c=>({x:c.x*scale,y:c.y*scale}));
-    const hit=sc.findIndex(c=>Math.hypot(c.x-pos.x,c.y-pos.y)<36);
+    const hit=sc.findIndex(c=>Math.hypot(c.x-pos.x,c.y-pos.y)<32);
     if(hit>=0)setDragging(hit);
   }
   function moveDrag(e){
-    e.preventDefault();if(dragging===null)return;
+    e.preventDefault();if(dragging===null||dragging<0)return;
     const canvas=canvasRef.current;
-    const scale=Math.min(window.innerWidth-32,600)/imgEl.naturalWidth;
+    const scale=Math.min(window.innerWidth-40,600)/imgEl.naturalWidth;
     const pos=getPos(e,canvas);
     setCorners(prev=>{const n=[...prev];n[dragging]={x:Math.max(0,Math.min(imgEl.naturalWidth,pos.x/scale)),y:Math.max(0,Math.min(imgEl.naturalHeight,pos.y/scale))};return n;});
   }
@@ -324,38 +304,37 @@ function DocScanner({imageSrc,onAccept,onRetake}){
     setProcessing(true);
     setTimeout(()=>{
       const[tl,tr,br,bl]=corners;
-      const w=Math.max(Math.hypot(tr.x-tl.x,tr.y-tl.y),Math.hypot(br.x-bl.x,br.y-bl.y));
-      const h=Math.max(Math.hypot(bl.x-tl.x,bl.y-tl.y),Math.hypot(br.x-tr.x,br.y-tr.y));
-      // Cap output size for mobile performance — max 1200px on longest side
-      const maxDim=1200;
-      const scale=Math.min(1,maxDim/Math.max(w,h));
-      const ow=Math.round(w*scale),oh=Math.round(h*scale);
-      const out=document.createElement("canvas");
-      out.width=ow;out.height=oh;
+      // Accurate perspective warp using bilinear interpolation
+      const outW=Math.round(Math.max(Math.hypot(tr.x-tl.x,tr.y-tl.y),Math.hypot(br.x-bl.x,br.y-bl.y)));
+      const outH=Math.round(Math.max(Math.hypot(bl.x-tl.x,bl.y-tl.y),Math.hypot(br.x-tr.x,br.y-tr.y)));
+      // Cap at 1400px for performance
+      const cap=1400;const sc=Math.min(1,cap/Math.max(outW,outH));
+      const W=Math.round(outW*sc),H=Math.round(outH*sc);
+      const out=document.createElement("canvas");out.width=W;out.height=H;
       const ctx=out.getContext("2d");
-      // Use drawImage with 8 sample points instead of pixel-by-pixel loop
-      // Approximate perspective with a simpler quadrilateral warp using 4 triangles
-      const sw=imgEl.naturalWidth,sh=imgEl.naturalHeight;
-      // Build a temp canvas at native size with just the cropped region (bounding box)
-      const minX=Math.min(tl.x,tr.x,br.x,bl.x);
-      const minY=Math.min(tl.y,tr.y,br.y,bl.y);
-      const maxX=Math.max(tl.x,tr.x,br.x,bl.x);
-      const maxY=Math.max(tl.y,tr.y,br.y,bl.y);
-      const bw=maxX-minX,bh=maxY-minY;
-      // Draw cropped region directly — fast approximate crop+stretch
-      ctx.drawImage(imgEl,minX,minY,bw,bh,0,0,ow,oh);
-      // Contrast enhancement on downscaled canvas
-      const id=ctx.getImageData(0,0,ow,oh);
-      const d=id.data;
+      // Sample in strips for speed — process 4 rows at a time
+      for(let y=0;y<H;y++){
+        const v=y/H;
+        const topX=(1-v)*tl.x+v*bl.x,topY=(1-v)*tl.y+v*bl.y;
+        const botX=(1-v)*tr.x+v*br.x,botY=(1-v)*tr.y+v*br.y;
+        for(let x=0;x<W;x++){
+          const u=x/W;
+          const sx=topX+u*(botX-topX);
+          const sy=topY+u*(botY-topY);
+          ctx.drawImage(imgEl,Math.round(sx),Math.round(sy),1,1,x,y,1,1);
+        }
+      }
+      // Contrast + slight sharpen
+      const id=ctx.getImageData(0,0,W,H);const d=id.data;
       for(let i=0;i<d.length;i+=4){
         const g=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2];
-        const e=Math.min(255,Math.max(0,(g-128)*1.5+155));
+        const e=Math.min(255,Math.max(0,(g-128)*1.45+150));
         d[i]=d[i+1]=d[i+2]=e;
       }
       ctx.putImageData(id,0,0);
-      setProcessed(out.toDataURL("image/jpeg",0.88));
+      setProcessed(out.toDataURL("image/jpeg",0.9));
       setMode("preview");setProcessing(false);
-    },30);
+    },40);
   }
 
   function acceptScan(){
@@ -365,43 +344,49 @@ function DocScanner({imageSrc,onAccept,onRetake}){
   }
 
   return(
-    <div style={{background:"#111",minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",padding:"16px",overflowY:"auto"}}>
-      <div style={{color:"#fff",fontSize:15,fontWeight:500,marginBottom:12,textAlign:"center"}}>
-        {mode==="crop"?"Drag corners to fit document edges":"Looking good? Accept or retake."}
+    <div className="scan-screen">
+      <div style={{color:"var(--gold-light)",fontSize:15,fontWeight:600,marginBottom:4,textAlign:"center"}}>
+        {mode==="crop"?"Drag the gold corners to align with the document":"Preview — happy with the result?"}
+      </div>
+      <div style={{color:"var(--text-3)",fontSize:12,marginBottom:14,textAlign:"center"}}>
+        {mode==="crop"?"The clear area shows what will be captured":""}
       </div>
       {mode==="crop"&&<>
-        <canvas ref={canvasRef} style={{maxWidth:"100%",maxHeight:"60vh",borderRadius:8,touchAction:"none",cursor:"crosshair"}}
+        <canvas ref={canvasRef} style={{maxWidth:"100%",maxHeight:"62vh",borderRadius:10,touchAction:"none",cursor:"crosshair",border:"1px solid var(--gold-border)"}}
           onMouseDown={startDrag} onMouseMove={moveDrag} onMouseUp={endDrag}
           onTouchStart={startDrag} onTouchMove={moveDrag} onTouchEnd={endDrag}/>
         <div style={{display:"flex",gap:10,marginTop:16,width:"100%",maxWidth:400}}>
-          <button onClick={onRetake} style={{flex:1,padding:"12px",fontSize:14,borderRadius:10,border:"1px solid rgba(255,255,255,.3)",background:"rgba(255,255,255,.1)",color:"#fff",cursor:"pointer"}}>Retake</button>
-          <button onClick={applyTransform} disabled={processing} style={{flex:2,padding:"12px",fontSize:14,fontWeight:500,borderRadius:10,border:"none",background:"#2563eb",color:"#fff",cursor:"pointer",opacity:processing?.6:1}}>
-            {processing?"Processing…":"Apply crop & enhance"}
+          <button onClick={onRetake} className="btn-ghost" style={{flex:1,padding:"12px"}}>Retake</button>
+          <button onClick={applyTransform} disabled={processing} className="btn-primary" style={{flex:2,padding:"12px",fontSize:14}}>
+            {processing?<span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><span style={{width:16,height:16,border:"2px solid rgba(26,34,53,0.3)",borderTopColor:"var(--navy)",borderRadius:"50%",display:"inline-block",animation:"spin .7s linear infinite"}}/> Processing…</span>:"Apply crop & enhance"}
           </button>
         </div>
       </>}
       {mode==="preview"&&processed&&<>
-        <img src={processed} style={{maxWidth:"100%",borderRadius:8,boxShadow:"0 4px 24px rgba(0,0,0,.5)"}}/>
+        <img src={processed} style={{maxWidth:"100%",maxHeight:"65vh",borderRadius:10,boxShadow:"0 8px 32px rgba(0,0,0,.6)",border:"1px solid var(--gold-border)"}}/>
         <div style={{display:"flex",gap:10,marginTop:16,width:"100%",maxWidth:400}}>
-          <button onClick={()=>setMode("crop")} style={{flex:1,padding:"12px",fontSize:14,borderRadius:10,border:"1px solid rgba(255,255,255,.3)",background:"rgba(255,255,255,.1)",color:"#fff",cursor:"pointer"}}>Re-crop</button>
-          <button onClick={onRetake} style={{flex:1,padding:"12px",fontSize:14,borderRadius:10,border:"1px solid rgba(255,255,255,.3)",background:"rgba(255,255,255,.1)",color:"#fff",cursor:"pointer"}}>Retake</button>
-          <button onClick={acceptScan} style={{flex:2,padding:"12px",fontSize:14,fontWeight:500,borderRadius:10,border:"none",background:"#16a34a",color:"#fff",cursor:"pointer"}}>Use this scan</button>
+          <button onClick={()=>setMode("crop")} className="btn-ghost" style={{flex:1,padding:"12px"}}>Re-crop</button>
+          <button onClick={onRetake} className="btn-ghost" style={{flex:1,padding:"12px"}}>Retake</button>
+          <button onClick={acceptScan} className="btn-primary" style={{flex:2,padding:"12px",fontSize:14}}>Use this scan</button>
         </div>
       </>}
     </div>
   );
 }
 
-// ── ScriptImages ──
+// ── ScriptImages ─────────────────────────────────────────────────────────────
 function ScriptImages({scriptPath,trailerPath,rxId,patientName}){
   const[scriptUrl,setScriptUrl]=useState(null);
   const[trailerUrl,setTrailerUrl]=useState(null);
   const[lightbox,setLightbox]=useState(null);
   const[shareOpen,setShareOpen]=useState(null);
+  const[zoom,setZoom]=useState(1);
+
   useEffect(()=>{
     if(scriptPath)sb.signedUrl(scriptPath).then(setScriptUrl);
     if(trailerPath)sb.signedUrl(trailerPath).then(setTrailerUrl);
   },[]);
+
   async function downloadImg(url,label){
     try{const res=await fetch(url);const blob=await res.blob();const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=rxId+"_"+label.replace(/\s+/g,"_")+".jpg";document.body.appendChild(a);a.click();document.body.removeChild(a);}
     catch(e){window.open(url,"_blank");}
@@ -416,142 +401,240 @@ function ScriptImages({scriptPath,trailerPath,rxId,patientName}){
   function email(url){const a=document.createElement("a");a.href="mailto:?subject="+encodeURIComponent("Prescription "+rxId)+"&body="+encodeURIComponent("Prescription "+rxId+" for "+patientName+":\n\n"+url);document.body.appendChild(a);a.click();document.body.removeChild(a);}
 
   const imgCard=(url,label)=>!url?null:(
-    <div style={{borderRadius:8,overflow:"hidden",border:"1px solid var(--color-border-tertiary)"}}>
-      <div style={{fontSize:11,padding:"5px 8px",background:"var(--color-background-secondary)",color:"var(--color-text-secondary)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-        <span style={{fontWeight:500}}>{label}</span>
+    <div className="img-card">
+      <div style={{fontSize:11,padding:"5px 10px",background:"rgba(0,0,0,0.3)",color:"var(--text-2)",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:"1px solid var(--border)"}}>
+        <span style={{fontWeight:500,color:"var(--gold-light)"}}>{label}</span>
         <div style={{display:"flex",gap:2}}>
-          {[["ti-eye","View",()=>setLightbox({url,label})],["ti-download","Download",()=>downloadImg(url,label)],["ti-printer","Print",()=>printImg(url)],["ti-share","Share",()=>setShareOpen(shareOpen===label?null:label)]].map(([ic,tip,fn])=>
-            <button key={ic} title={tip} onClick={fn} style={{background:"none",border:"none",cursor:"pointer",fontSize:15,color:"var(--color-text-secondary)",padding:"2px 5px"}}><i className={"ti "+ic}/></button>
+          {[["ti-eye","View",()=>{setLightbox({url,label});setZoom(1);}],["ti-download","Download",()=>downloadImg(url,label)],["ti-printer","Print",()=>printImg(url)],["ti-share","Share",()=>setShareOpen(shareOpen===label?null:label)]].map(([ic,tip,fn])=>
+            <button key={ic} title={tip} onClick={fn} className="icon-btn"><i className={"ti "+ic}/></button>
           )}
         </div>
       </div>
       {shareOpen===label&&(
-        <div style={{padding:"8px",background:"var(--color-background-primary)",borderBottom:"1px solid var(--color-border-tertiary)",display:"flex",gap:6}}>
-          <button onClick={()=>{whatsapp(url);setShareOpen(null);}} style={{flex:1,padding:"7px",fontSize:12,fontWeight:500,borderRadius:7,border:"1px solid #25d366",background:"#e7fbe9",color:"#128c3e",cursor:"pointer"}}>WhatsApp</button>
-          <button onClick={()=>{email(url);setShareOpen(null);}} style={{flex:1,padding:"7px",fontSize:12,fontWeight:500,borderRadius:7,border:"1px solid var(--color-border-info)",background:"var(--color-background-info)",color:"var(--color-text-info)",cursor:"pointer"}}>Email</button>
+        <div style={{padding:"8px",background:"rgba(0,0,0,0.2)",display:"flex",gap:6,borderBottom:"1px solid var(--border)"}}>
+          <button onClick={()=>{whatsapp(url);setShareOpen(null);}} style={{flex:1,padding:"7px",fontSize:12,fontWeight:500,borderRadius:6,border:"1px solid #25d366",background:"rgba(37,211,102,0.12)",color:"#4ade80",cursor:"pointer",fontFamily:"var(--font-sans)"}}>WhatsApp</button>
+          <button onClick={()=>{email(url);setShareOpen(null);}} style={{flex:1,padding:"7px",fontSize:12,fontWeight:500,borderRadius:6,border:"1px solid var(--blue-border)",background:"var(--blue-bg)",color:"var(--blue)",cursor:"pointer",fontFamily:"var(--font-sans)"}}>Email</button>
         </div>
       )}
-      <img src={url} onClick={()=>setLightbox({url,label})} style={{width:"100%",display:"block",maxHeight:160,objectFit:"contain",background:"#fff",cursor:"zoom-in"}}/>
+      <img src={url} onDoubleClick={()=>{setLightbox({url,label});setZoom(1);}}
+        style={{width:"100%",display:"block",maxHeight:160,objectFit:"contain",background:"#0d1117",cursor:"zoom-in"}}
+        title="Double-click to view full size"/>
+      <div style={{fontSize:10,textAlign:"center",color:"var(--text-3)",padding:"3px",background:"rgba(0,0,0,0.2)"}}>Double-click to zoom</div>
     </div>
   );
+
   return(
     <div style={{marginTop:10}}>
-      <div style={{fontSize:11,color:"var(--color-text-tertiary)",marginBottom:6}}>Scanned documents</div>
+      <div style={{fontSize:10,color:"var(--gold)",fontWeight:600,textTransform:"uppercase",letterSpacing:"0.6px",marginBottom:6,opacity:0.8}}>Scanned documents</div>
       <div style={{display:"grid",gridTemplateColumns:scriptUrl&&trailerUrl?"1fr 1fr":"1fr",gap:8}}>
         {imgCard(scriptUrl,"Prescription")}{imgCard(trailerUrl,"Trailer label")}
       </div>
       {lightbox&&(
-        <div onClick={()=>setLightbox(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.9)",zIndex:1000,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:16}}>
-          <div style={{display:"flex",gap:6,marginBottom:12,flexWrap:"wrap",justifyContent:"center"}}>
-            {[["ti-download","Download",()=>downloadImg(lightbox.url,lightbox.label)],["ti-printer","Print",()=>printImg(lightbox.url)],["ti-brand-whatsapp","WhatsApp",()=>whatsapp(lightbox.url)],["ti-mail","Email",()=>email(lightbox.url)],["ti-x","Close",()=>setLightbox(null)]].map(([ic,tip,fn])=>
-              <button key={ic} onClick={e=>{e.stopPropagation();fn();}} style={{padding:"8px 14px",borderRadius:8,border:"1px solid rgba(255,255,255,.25)",background:"rgba(255,255,255,.12)",color:"#fff",cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",gap:5}}><i className={"ti "+ic}/>{tip}</button>
+        <div className="lightbox" onClick={()=>setLightbox(null)}>
+          <div style={{display:"flex",gap:6,marginBottom:14,flexWrap:"wrap",justifyContent:"center"}}>
+            {[["ti-zoom-in","Zoom in",()=>setZoom(z=>Math.min(z+0.5,4))],["ti-zoom-out","Zoom out",()=>setZoom(z=>Math.max(z-0.5,0.5))],["ti-download","Download",()=>downloadImg(lightbox.url,lightbox.label)],["ti-printer","Print",()=>printImg(lightbox.url)],["ti-brand-whatsapp","WhatsApp",()=>whatsapp(lightbox.url)],["ti-mail","Email",()=>email(lightbox.url)],["ti-x","Close",()=>setLightbox(null)]].map(([ic,tip,fn])=>
+              <button key={ic} onClick={e=>{e.stopPropagation();fn();}} style={{padding:"8px 12px",borderRadius:8,border:"1px solid var(--gold-border)",background:"rgba(201,168,76,0.1)",color:"var(--gold-light)",cursor:"pointer",fontSize:12,display:"flex",alignItems:"center",gap:4,fontFamily:"var(--font-sans)"}}><i className={"ti "+ic}/><span style={{display:"none"}}>{tip}</span></button>
             )}
           </div>
-          <img src={lightbox.url} onClick={e=>e.stopPropagation()} style={{maxWidth:"100%",maxHeight:"75vh",borderRadius:8,objectFit:"contain"}}/>
-          <div style={{color:"rgba(255,255,255,.5)",fontSize:12,marginTop:8}}>{lightbox.label} · Tap outside to close</div>
+          <div style={{overflow:"auto",maxWidth:"100%",maxHeight:"72vh"}}>
+            <img src={lightbox.url} onClick={e=>e.stopPropagation()} style={{display:"block",transform:"scale("+zoom+")",transformOrigin:"top center",transition:"transform 0.2s",borderRadius:8,border:"1px solid var(--gold-border)",maxWidth:zoom<=1?"100%":"none"}}/>
+          </div>
+          <div style={{color:"var(--text-3)",fontSize:11,marginTop:8}}>{lightbox.label} · {Math.round(zoom*100)}% · Click outside to close</div>
         </div>
       )}
     </div>
   );
 }
 
-// ── EditScriptModal ──
-function EditScriptModal({rx,onSave,onClose}){
+// ── EditScriptModal ───────────────────────────────────────────────────────────
+function EditScriptModal({rx,onSave,onClose,staffList}){
   const[form,setForm]=useState({script_date:rx.script_date||"",valid_until:rx.valid_until||"",doctor:rx.doctor||"",practice_no:rx.practice_no||"",items:rx.items||"",diagnosis:rx.diagnosis||"",repeats:rx.repeats||0,is_chronic:rx.is_chronic||false,changes:rx.changes||"",dispensed_by_name:rx.dispensed_by_name||"",total_price:rx.total_price||""});
   const[saving,setSaving]=useState(false);
+  const dispensers=staffList?staffList.filter(s=>s.role!=="locum").map(s=>s.name):[];
   async function save(){setSaving(true);try{await onSave(rx.id,form);}catch(e){alert("Save failed: "+e.message);}setSaving(false);}
+  const inpS={...{width:"100%",padding:"8px 10px",fontSize:13,border:"1px solid var(--border)",borderRadius:6,background:"var(--surface-solid)",color:"var(--text-1)",fontFamily:"var(--font-sans)",outline:"none",boxSizing:"border-box"}};
+  const lS={fontSize:12,fontWeight:500,color:"var(--text-2)",marginBottom:4,display:"block"};
+  const sec=t=><div className="section-title" style={{marginTop:14}}>{t}</div>;
+  const f=(lbl,key,type="text",ph="")=>(<div style={{marginBottom:10}}><label style={lS}>{lbl}</label><input style={inpS} type={type} value={form[key]||""} placeholder={ph} onChange={e=>setForm(f=>({...f,[key]:e.target.value}))}/></div>);
+  const r2=(a,b)=><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>{a}{b}</div>;
   return(
-    <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.5)",zIndex:500,display:"flex",alignItems:"flex-start",justifyContent:"center",padding:"20px 16px",overflowY:"auto"}}>
-      <div onClick={e=>e.stopPropagation()} style={{background:"var(--color-background-primary)",borderRadius:14,width:"100%",maxWidth:520,padding:"20px",boxShadow:"0 8px 32px rgba(0,0,0,.2)"}}>
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-box" onClick={e=>e.stopPropagation()}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-          <div><div style={{fontSize:15,fontWeight:500}}>Edit script</div><div style={{fontSize:12,color:"var(--color-text-secondary)"}}>{rx.id}</div></div>
-          <button onClick={onClose} style={{background:"none",border:"none",fontSize:20,cursor:"pointer",color:"var(--color-text-secondary)"}}><i className="ti ti-x"/></button>
+          <div><div style={{fontSize:15,fontWeight:600,color:"var(--gold-light)"}}>Edit script</div><div style={{fontSize:12,color:"var(--text-3)"}}>{rx.id}</div></div>
+          <button onClick={onClose} style={{background:"none",border:"none",fontSize:20,cursor:"pointer",color:"var(--text-3)"}}><i className="ti ti-x"/></button>
         </div>
         {sec("Script details")}
-        {row2(fld("Script date","script_date",form,setForm,"date"),fld("Valid until","valid_until",form,setForm,"date"))}
-        {row2(fld("Doctor","doctor",form,setForm,"text","e.g. Dr. Mokoena"),fld("Practice no.","practice_no",form,setForm,"text","optional"))}
+        {r2(f("Script date","script_date","date"),f("Valid until","valid_until","date"))}
+        {r2(f("Doctor","doctor","text","e.g. Dr. Mokoena"),f("Practice no.","practice_no","text","optional"))}
         {sec("Medications")}
-        <div style={{marginBottom:10}}><label style={lbl}>Medications dispensed</label><textarea style={{...inp,minHeight:72,resize:"vertical"}} value={form.items} onChange={e=>setForm(f=>({...f,items:e.target.value}))}/></div>
-        {fld("Diagnosis / notes","diagnosis",form,setForm,"text","optional")}
-        <div style={{marginBottom:10,display:"flex",alignItems:"center",gap:10}}>
-          <input type="checkbox" checked={form.is_chronic} onChange={e=>setForm(f=>({...f,is_chronic:e.target.checked}))} style={{width:16,height:16,cursor:"pointer"}}/>
-          <label style={{fontSize:13,cursor:"pointer"}}>Chronic script</label>
-        </div>
-        {form.is_chronic&&<>{fld("Repeats remaining","repeats",form,setForm,"number")}<div style={{marginBottom:10}}><label style={lbl}>Changes from previous</label><textarea style={{...inp,minHeight:52,resize:"vertical"}} value={form.changes} onChange={e=>setForm(f=>({...f,changes:e.target.value}))}/></div></>}
+        <div style={{marginBottom:10}}><label style={lS}>Medications dispensed</label><textarea style={{...inpS,minHeight:72,resize:"vertical"}} value={form.items} onChange={e=>setForm(f=>({...f,items:e.target.value}))}/></div>
+        {f("Diagnosis / notes","diagnosis","text","optional")}
+        <div style={{marginBottom:10,display:"flex",alignItems:"center",gap:10}}><input type="checkbox" checked={form.is_chronic} onChange={e=>setForm(f=>({...f,is_chronic:e.target.checked}))} style={{width:16,height:16,cursor:"pointer",accentColor:"var(--gold)"}}/><label style={{...lS,marginBottom:0,cursor:"pointer"}}>Chronic script</label></div>
+        {form.is_chronic&&<><div style={{marginBottom:10}}><label style={lS}>Repeats remaining</label><input style={inpS} type="number" value={form.repeats||""} onChange={e=>setForm(f=>({...f,repeats:e.target.value}))}/></div><div style={{marginBottom:10}}><label style={lS}>Changes from previous</label><textarea style={{...inpS,minHeight:52,resize:"vertical"}} value={form.changes} onChange={e=>setForm(f=>({...f,changes:e.target.value}))}/></div></>}
         {sec("Filing")}
-        {row2(fld("Dispensed by","dispensed_by_name",form,setForm),fld("Total price (R)","total_price",form,setForm,"text","e.g. 245.00"))}
-        <div style={{display:"flex",gap:10,marginTop:8}}>
-          <button onClick={onClose} style={{flex:1,padding:"10px",fontSize:14,borderRadius:8,border:"1px solid var(--color-border-secondary)",background:"var(--color-background-secondary)",color:"var(--color-text-secondary)",cursor:"pointer"}}>Cancel</button>
-          <button onClick={save} disabled={saving} style={{flex:1,padding:"10px",fontSize:14,fontWeight:500,borderRadius:8,background:"var(--color-background-info)",color:"var(--color-text-info)",border:"1px solid var(--color-border-info)",cursor:"pointer",opacity:saving?.6:1}}>{saving?"Saving…":"Save changes"}</button>
+        <div style={{marginBottom:10}}>
+          <label style={lS}>Dispensed by</label>
+          <select style={inpS} value={form.dispensed_by_name} onChange={e=>setForm(f=>({...f,dispensed_by_name:e.target.value}))}>
+            <option value="">Select dispenser…</option>
+            {dispensers.map(n=><option key={n} value={n}>{n}</option>)}
+          </select>
+        </div>
+        {f("Total price (R)","total_price","text","e.g. 245.00")}
+        <div className="divider"/>
+        <div style={{display:"flex",gap:10}}>
+          <button onClick={onClose} className="btn-ghost" style={{flex:1,padding:"10px"}}>Cancel</button>
+          <button onClick={save} disabled={saving} className="btn-primary" style={{flex:2,padding:"10px",textAlign:"center"}}>{saving?"Saving…":"Save changes"}</button>
         </div>
       </div>
     </div>
   );
 }
 
-// ── UploadScriptPanel ──
-// scannerImg and setScannerImg live in App and are passed as props.
-// onScanAccepted is a callback from App that delivers the scanned file+preview back into this panel.
-function UploadScriptPanel({currentUser,patients,selPtId,onSaved,onAudit,compact,requestScan,pendingScan,clearPendingScan}){
-  const emptyRx={patientId:selPtId||"",script_date:new Date().toISOString().slice(0,10),valid_until:"",doctor:"",practice_no:"",items:"",diagnosis:"",repeats:"",is_chronic:false,changes:"",dispensed_by_name:"",total_price:"",trailerFile:null,scriptFile:null,trailerPreview:null,scriptPreview:null};
+// ── EditPatientModal ─────────────────────────────────────────────────────────
+function EditPatientModal({pt,onSave,onClose}){
+  const[form,setForm]=useState({...pt});
+  const[saving,setSaving]=useState(false);
+  async function save(){setSaving(true);try{await onSave(pt.id,form);}catch(e){alert("Save failed: "+e.message);}setSaving(false);}
+  const inpS={width:"100%",padding:"8px 10px",fontSize:13,border:"1px solid var(--border)",borderRadius:6,background:"var(--surface-solid)",color:"var(--text-1)",fontFamily:"var(--font-sans)",outline:"none",boxSizing:"border-box"};
+  const lS={fontSize:12,fontWeight:500,color:"var(--text-2)",marginBottom:4,display:"block"};
+  const sec=t=><div className="section-title" style={{marginTop:14}}>{t}</div>;
+  const f=(lbl,key,type="text",ph="",maxLen=null)=>(<div style={{marginBottom:10}}><label style={lS}>{lbl}</label><input style={inpS} type={type} value={form[key]||""} placeholder={ph} maxLength={maxLen||undefined} onChange={e=>setForm(v=>({...v,[key]:e.target.value}))}/></div>);
+  const r2=(a,b)=><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>{a}{b}</div>;
+  return(
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-box" style={{maxWidth:540}} onClick={e=>e.stopPropagation()}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+          <div><div style={{fontSize:15,fontWeight:600,color:"var(--gold-light)"}}>Edit patient profile</div><div style={{fontSize:12,color:"var(--text-3)"}}>{pt.id}</div></div>
+          <button onClick={onClose} style={{background:"none",border:"none",fontSize:20,cursor:"pointer",color:"var(--text-3)"}}><i className="ti ti-x"/></button>
+        </div>
+        {sec("Identity")}
+        {r2(f("First name","first_name","text",""),f("Surname","surname"))}
+        <div style={{marginBottom:10}}>
+          <label style={lS}>SA ID number</label>
+          <input style={inpS} type="text" value={form.id_number||""} maxLength={13}
+            onChange={e=>{const v=e.target.value.replace(/\D/g,"").slice(0,13);const dob=v.length>=6?parseSaId(v):null;setForm(f=>({...f,id_number:v,...(dob?{dob}:{})}));}}/>
+        </div>
+        {f("Date of birth","dob","date")}
+        {sec("Contact")}
+        <div style={{marginBottom:10}}>
+          <label style={lS}>Phone</label>
+          <input style={inpS} type="tel" value={form.phone||""} onBlur={e=>setForm(f=>({...f,phone:fmtPhone(e.target.value)}))} onChange={e=>setForm(f=>({...f,phone:e.target.value}))}/>
+        </div>
+        {f("Email","email","email")}
+        {sec("Address")}
+        {f("Line 1","address_line1","text","Street number and name")}
+        {f("Line 2","address_line2","text","Suburb / complex")}
+        {f("Line 3","address_line3","text","City / town")}
+        {r2(f("Province","address_province"),f("Postal code","address_postal"))}
+        {sec("Medical aid")}
+        {r2(f("Aid name","aid_name"),f("Aid number","aid_number"))}
+        {f("Dependant code","dependant_code","text","00 = main")}
+        {sec("System reference")}
+        {f("Dispensing profile no.","disp_profile_no")}
+        {sec("Emergency contact")}
+        {r2(f("Next of kin name","nok_name"),f("NOK phone","nok_phone","tel"))}
+        <div className="divider"/>
+        <div style={{display:"flex",gap:10}}>
+          <button onClick={onClose} className="btn-ghost" style={{flex:1,padding:"10px"}}>Cancel</button>
+          <button onClick={save} disabled={saving} className="btn-primary" style={{flex:2,padding:"10px",textAlign:"center"}}>{saving?"Saving…":"Save changes"}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── StaffManagerModal ────────────────────────────────────────────────────────
+function StaffManagerModal({staffList,setStaffList,currentUser,onClose}){
+  const[newStaff,setNewStaff]=useState({name:"",title:"",role:"dispenser",pin:""});
+  const[editingPin,setEditingPin]=useState(null);
+  const[newPin,setNewPin]=useState("");
+  const inpS={width:"100%",padding:"8px 10px",fontSize:13,border:"1px solid var(--border)",borderRadius:6,background:"var(--surface-solid)",color:"var(--text-1)",fontFamily:"var(--font-sans)",outline:"none",boxSizing:"border-box"};
+  const lS={fontSize:12,fontWeight:500,color:"var(--text-2)",marginBottom:4,display:"block"};
+  function addStaff(){if(!newStaff.name.trim()||!newStaff.pin.trim())return alert("Name and PIN required");if(newStaff.pin.length!==5||isNaN(newStaff.pin))return alert("PIN must be 5 digits");const id="S"+String(Date.now()).slice(-4);setStaffList(l=>[...l,{...newStaff,id}]);setNewStaff({name:"",title:"",role:"dispenser",pin:""});}
+  function removeStaff(id){if(id===currentUser.id)return alert("Cannot remove yourself.");if(!window.confirm("Remove this staff member?"))return;setStaffList(l=>l.filter(s=>s.id!==id));}
+  function savePin(id){if(newPin.length!==5||isNaN(newPin))return alert("PIN must be 5 digits");setStaffList(l=>l.map(s=>s.id===id?{...s,pin:newPin}:s));setEditingPin(null);setNewPin("");}
+  return(
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-box" style={{maxWidth:580}} onClick={e=>e.stopPropagation()}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+          <div style={{fontSize:15,fontWeight:600,color:"var(--gold-light)"}}>Manage staff</div>
+          <button onClick={onClose} style={{background:"none",border:"none",fontSize:20,cursor:"pointer",color:"var(--text-3)"}}><i className="ti ti-x"/></button>
+        </div>
+        {["admin","dispenser","locum"].map(role=>(
+          <div key={role} style={{marginBottom:14}}>
+            <div className="section-title">{RL[role]}</div>
+            {staffList.filter(s=>s.role===role).map(s=>(
+              <div key={s.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",background:"var(--surface-solid)",border:"1px solid var(--border)",borderRadius:8,marginBottom:6}}>
+                <div style={{flex:1}}><div style={{fontWeight:600,fontSize:13,color:"var(--text-1)"}}>{s.name}</div><div style={{fontSize:11,color:"var(--text-3)"}}>{s.title||"—"}</div></div>
+                {editingPin===s.id?(
+                  <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                    <input style={{...inpS,width:90,letterSpacing:"0.2em"}} type="text" maxLength={5} placeholder="New PIN" value={newPin} onChange={e=>setNewPin(e.target.value.replace(/\D/g,"").slice(0,5))}/>
+                    <button onClick={()=>savePin(s.id)} className="btn-primary" style={{padding:"6px 12px",fontSize:12}}>Save</button>
+                    <button onClick={()=>{setEditingPin(null);setNewPin("");}} className="btn-ghost" style={{padding:"6px 10px",fontSize:12}}>✕</button>
+                  </div>
+                ):(
+                  <div style={{display:"flex",gap:6}}>
+                    <button onClick={()=>{setEditingPin(s.id);setNewPin("");}} className="btn-ghost" style={{fontSize:12,padding:"5px 10px"}}>Change PIN</button>
+                    {s.id!==currentUser.id&&<button onClick={()=>removeStaff(s.id)} className="btn-danger" style={{padding:"5px 10px"}}>Remove</button>}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        ))}
+        <div className="divider"/>
+        <div style={{fontSize:13,fontWeight:600,color:"var(--gold-light)",marginBottom:10}}>Add new staff member</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+          <div><label style={lS}>Full name *</label><input style={inpS} value={newStaff.name} onChange={e=>setNewStaff(f=>({...f,name:e.target.value}))} placeholder="e.g. Thabo Nkosi"/></div>
+          <div><label style={lS}>Job title</label><input style={inpS} value={newStaff.title} onChange={e=>setNewStaff(f=>({...f,title:e.target.value}))} placeholder="e.g. Pharmacist"/></div>
+          <div><label style={lS}>Role *</label><select style={inpS} value={newStaff.role} onChange={e=>setNewStaff(f=>({...f,role:e.target.value}))}><option value="admin">Admin</option><option value="dispenser">Dispenser</option><option value="locum">Locum</option></select></div>
+          <div><label style={lS}>PIN (5 digits) *</label><input style={{...inpS,letterSpacing:"0.2em"}} type="text" maxLength={5} value={newStaff.pin} onChange={e=>setNewStaff(f=>({...f,pin:e.target.value.replace(/\D/g,"").slice(0,5)}))} placeholder="e.g. 84721"/></div>
+        </div>
+        <button onClick={addStaff} className="btn-primary" style={{width:"100%",padding:"10px",textAlign:"center"}}>Add staff member</button>
+      </div>
+    </div>
+  );
+}
+
+// ── UploadScriptPanel ────────────────────────────────────────────────────────
+function UploadScriptPanel({currentUser,patients,selPtId,onSaved,onAudit,compact,requestScan,pendingScan,clearPendingScan,staffList}){
+  const emptyRx={patientId:selPtId||"",script_date:new Date().toISOString().slice(0,10),valid_until:"",doctor:"",practice_no:"",items:"",diagnosis:"",repeats:"",is_chronic:false,changes:"",dispensed_by_name:currentUser?currentUser.name:"",total_price:"",trailerFile:null,scriptFile:null,trailerPreview:null,scriptPreview:null};
   const[newRx,setNewRx]=useState(emptyRx);
   const[ptSearch,setPtSearch]=useState("");
   const[scanStep,setScanStep]=useState("idle");
   const[loading,setLoading]=useState(false);
   const[toast,setToast]=useState(null);
-  const[waitingFor,setWaitingFor]=useState(null); // "script" | "trailer"
+  const[waitingFor,setWaitingFor]=useState(null);
+  const dispensers=staffList?staffList.filter(s=>s.role!=="locum").map(s=>s.name):[];
 
   useEffect(()=>{
-    if(selPtId){
-      const pt=patients.find(p=>p.id===selPtId);
-      if(pt){setNewRx(r=>({...r,patientId:selPtId}));setPtSearch(fullName(pt)+" ("+selPtId+")");}
-    }
+    if(selPtId){const pt=patients.find(p=>p.id===selPtId);if(pt){setNewRx(r=>({...r,patientId:selPtId}));setPtSearch(fullName(pt)+" ("+selPtId+")");}}
   },[selPtId]);
 
-  // When App delivers a scanned file back
   useEffect(()=>{
     if(!pendingScan||!waitingFor)return;
     const{file,preview}=pendingScan;
-    if(waitingFor==="script"){
-      setNewRx(r=>({...r,scriptFile:file,scriptPreview:preview}));
-      setScanStep("scanning_script");
-    } else {
-      setNewRx(r=>({...r,trailerFile:file,trailerPreview:preview}));
-      setScanStep("parsing");
+    if(waitingFor==="script"){setNewRx(r=>({...r,scriptFile:file,scriptPreview:preview}));setScanStep("scanning_script");}
+    else{
+      setNewRx(r=>({...r,trailerFile:file,trailerPreview:preview}));setScanStep("parsing");
       toBase64(file).then(b64=>parseTrailerLabel(b64)).then(parsed=>{
-        const matched=selPtId
-          ?patients.find(p=>p.id===selPtId)
-          :patients.find(p=>parsed.patientSurname&&p.surname.toLowerCase().includes(parsed.patientSurname.toLowerCase()));
-        setNewRx(r=>({...r,
-          patientId:matched?matched.id:r.patientId,
-          script_date:parsed.scriptDate||r.script_date,
-          items:parsed.medications||r.items,
-          dispensed_by_name:parsed.dispenserName||currentUser.name,
-          total_price:parsed.totalPrice||r.total_price,
-          doctor:parsed.doctor||r.doctor
-        }));
+        const matched=selPtId?patients.find(p=>p.id===selPtId):patients.find(p=>parsed.patientSurname&&p.surname.toLowerCase().includes(parsed.patientSurname.toLowerCase()));
+        setNewRx(r=>({...r,patientId:matched?matched.id:r.patientId,script_date:parsed.scriptDate||r.script_date,items:parsed.medications||r.items,dispensed_by_name:parsed.dispenserName||currentUser.name,total_price:parsed.totalPrice||r.total_price,doctor:parsed.doctor||r.doctor}));
         if(!selPtId&&matched)setPtSearch(fullName(matched)+" ("+matched.id+")");
         else if(!selPtId&&parsed.patientSurname)setPtSearch(parsed.patientSurname);
         setScanStep("verify");
       }).catch(()=>{showToast("Could not read label — fill in manually","error");setScanStep("verify");});
     }
-    setWaitingFor(null);
-    clearPendingScan();
+    setWaitingFor(null);clearPendingScan();
   },[pendingScan]);
 
   function showToast(msg,type="success"){setToast({msg,type});setTimeout(()=>setToast(null),3500);}
-  function resetScan(){
-    setScanStep("idle");
-    const pt=selPtId?patients.find(p=>p.id===selPtId):null;
-    setNewRx({...emptyRx,patientId:selPtId||""});
-    setPtSearch(pt?fullName(pt)+" ("+selPtId+")":"");
-    setWaitingFor(null);
-  }
-
+  function resetScan(){setScanStep("idle");const pt=selPtId?patients.find(p=>p.id===selPtId):null;setNewRx({...emptyRx,patientId:selPtId||""});setPtSearch(pt?fullName(pt)+" ("+selPtId+")":"");setWaitingFor(null);}
   function openCamera(target){setWaitingFor(target);requestScan();}
 
   async function addScript(){
-    if(!newRx.patientId)return showToast("Patient not matched — search and select below","error");
+    if(!newRx.patientId)return showToast("Patient not matched","error");
     if(!newRx.items.trim())return showToast("Medications are required","error");
     setLoading(true);
     try{
@@ -567,97 +650,111 @@ function UploadScriptPanel({currentUser,patients,selPtId,onSaved,onAudit,compact
     setLoading(false);
   }
 
+  const inpS={width:"100%",padding:"8px 10px",fontSize:13,border:"1px solid var(--border)",borderRadius:6,background:"var(--surface-solid)",color:"var(--text-1)",fontFamily:"var(--font-sans)",outline:"none",boxSizing:"border-box"};
+  const lS={fontSize:12,fontWeight:500,color:"var(--text-2)",marginBottom:4,display:"block"};
+  const sec=t=><div className="section-title" style={{marginTop:14}}>{t}</div>;
+
   return(
     <div style={{maxWidth:compact?null:500}}>
-      {toast&&<div style={{position:"fixed",top:16,right:16,zIndex:999,padding:"10px 18px",borderRadius:10,fontSize:13,fontWeight:500,background:toast.type==="error"?"var(--color-background-danger)":"var(--color-background-success)",color:toast.type==="error"?"var(--color-text-danger)":"var(--color-text-success)",border:"1px solid var(--color-border-"+(toast.type==="error"?"danger":"success")+")",boxShadow:"0 2px 12px rgba(0,0,0,.12)"}}>{toast.msg}</div>}
+      {toast&&<div className={"toast "+(toast.type==="error"?"toast-error":"toast-success")}>{toast.msg}</div>}
 
       {scanStep==="idle"&&<div>
-        <div style={{textAlign:"center",padding:"16px 0 8px"}}>
-          <div style={{width:50,height:50,borderRadius:12,background:"var(--color-background-info)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 12px"}}><i className="ti ti-file-text" style={{fontSize:24,color:"var(--color-text-info)"}}/></div>
-          <div style={{fontSize:15,fontWeight:500,marginBottom:4}}>Step 1 of 3 — Scan prescription</div>
-          <div style={{fontSize:13,color:"var(--color-text-secondary)",marginBottom:20,lineHeight:1.5}}>Take a clear photo of the physical prescription.</div>
-          <button onClick={()=>openCamera("script")} style={{padding:"11px 24px",fontSize:14,fontWeight:500,borderRadius:10,background:"var(--color-background-info)",color:"var(--color-text-info)",border:"1px solid var(--color-border-info)",cursor:"pointer"}}><i className="ti ti-camera"/> Open camera</button>
+        <div style={{textAlign:"center",padding:"20px 0 10px"}}>
+          <div style={{width:54,height:54,borderRadius:16,background:"linear-gradient(135deg,var(--navy-light),var(--navy-mid))",border:"1px solid var(--gold-border)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px"}}><i className="ti ti-file-text" style={{fontSize:26,color:"var(--gold-light)"}}/></div>
+          <div style={{fontSize:15,fontWeight:600,color:"var(--text-1)",marginBottom:6}}>Step 1 of 3 — Scan prescription</div>
+          <div style={{fontSize:13,color:"var(--text-2)",marginBottom:22,lineHeight:1.6}}>Take a clear photo of the physical prescription.</div>
+          <button onClick={()=>openCamera("script")} className="btn-primary" style={{padding:"11px 28px",fontSize:14}}>Open camera</button>
         </div>
-        <button onClick={()=>setScanStep("scanning_script")} style={{marginTop:10,width:"100%",padding:"9px",fontSize:13,borderRadius:8,border:"1px solid var(--color-border-secondary)",background:"transparent",color:"var(--color-text-secondary)",cursor:"pointer"}}>Skip — proceed to trailer label</button>
+        <button onClick={()=>setScanStep("scanning_script")} style={{marginTop:10,width:"100%",padding:"9px",fontSize:13,borderRadius:8,border:"1px solid var(--border)",background:"transparent",color:"var(--text-3)",cursor:"pointer",fontFamily:"var(--font-sans)"}}>Skip — proceed to trailer label</button>
       </div>}
 
       {scanStep==="scanning_script"&&<div>
-        <div style={{textAlign:"center",padding:"16px 0 16px"}}>
-          {newRx.scriptPreview&&<img src={newRx.scriptPreview} style={{width:80,height:"auto",borderRadius:8,marginBottom:12,border:"1px solid var(--color-border-tertiary)"}}/>}
-          {newRx.scriptPreview&&<div style={{fontSize:13,fontWeight:500,color:"var(--color-text-success)",marginBottom:12}}><i className="ti ti-circle-check"/> Prescription scanned</div>}
-          <div style={{width:50,height:50,borderRadius:12,background:"var(--color-background-warning)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 12px"}}><i className="ti ti-scan" style={{fontSize:24,color:"var(--color-text-warning)"}}/></div>
-          <div style={{fontSize:15,fontWeight:500,marginBottom:4}}>Step 2 of 3 — Scan trailer label</div>
-          <div style={{fontSize:13,color:"var(--color-text-secondary)",marginBottom:20,lineHeight:1.5}}>Photograph the small sticker label — AI will fill the form.</div>
-          <button onClick={()=>openCamera("trailer")} style={{padding:"11px 24px",fontSize:14,fontWeight:500,borderRadius:10,background:"var(--color-background-warning)",color:"var(--color-text-warning)",border:"1px solid var(--color-border-warning)",cursor:"pointer"}}><i className="ti ti-camera"/> Open camera</button>
+        <div style={{textAlign:"center",padding:"18px 0"}}>
+          {newRx.scriptPreview&&<img src={newRx.scriptPreview} style={{width:80,height:"auto",borderRadius:8,marginBottom:12,border:"1px solid var(--gold-border)"}}/>}
+          {newRx.scriptPreview&&<div style={{fontSize:13,fontWeight:500,color:"var(--green)",marginBottom:14,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><i className="ti ti-circle-check"/> Prescription scanned</div>}
+          <div style={{width:54,height:54,borderRadius:16,background:"var(--amber-bg)",border:"1px solid var(--amber-border)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px"}}><i className="ti ti-scan" style={{fontSize:26,color:"var(--amber)"}}/></div>
+          <div style={{fontSize:15,fontWeight:600,color:"var(--text-1)",marginBottom:6}}>Step 2 of 3 — Scan trailer label</div>
+          <div style={{fontSize:13,color:"var(--text-2)",marginBottom:22,lineHeight:1.6}}>Photograph the small sticker label — AI will fill the form.</div>
+          <button onClick={()=>openCamera("trailer")} style={{padding:"11px 28px",fontSize:14,fontWeight:600,borderRadius:10,background:"linear-gradient(135deg,var(--amber),#f0a030)",color:"var(--navy)",border:"none",cursor:"pointer",fontFamily:"var(--font-sans)"}}>Open camera</button>
         </div>
-        <button onClick={()=>setScanStep("verify")} style={{width:"100%",padding:"9px",fontSize:13,borderRadius:8,border:"1px solid var(--color-border-secondary)",background:"transparent",color:"var(--color-text-secondary)",cursor:"pointer"}}>Skip — fill in manually</button>
-        <button onClick={()=>setScanStep("idle")} style={{marginTop:6,width:"100%",padding:"9px",fontSize:13,borderRadius:8,border:"none",background:"transparent",color:"var(--color-text-tertiary)",cursor:"pointer"}}>← Rescan prescription</button>
+        <button onClick={()=>setScanStep("verify")} style={{width:"100%",padding:"9px",fontSize:13,borderRadius:8,border:"1px solid var(--border)",background:"transparent",color:"var(--text-3)",cursor:"pointer",fontFamily:"var(--font-sans)"}}>Skip — fill in manually</button>
+        <button onClick={()=>setScanStep("idle")} style={{marginTop:6,width:"100%",padding:"9px",fontSize:13,borderRadius:8,border:"none",background:"transparent",color:"var(--text-3)",cursor:"pointer",fontFamily:"var(--font-sans)"}}>← Rescan prescription</button>
       </div>}
 
-      {scanStep==="parsing"&&<div style={{textAlign:"center",padding:"40px 0"}}>
-        {newRx.trailerPreview&&<img src={newRx.trailerPreview} style={{width:90,height:"auto",borderRadius:8,marginBottom:16,border:"1px solid var(--color-border-tertiary)"}}/>}
+      {scanStep==="parsing"&&<div style={{textAlign:"center",padding:"48px 0"}}>
+        {newRx.trailerPreview&&<img src={newRx.trailerPreview} style={{width:90,height:"auto",borderRadius:8,marginBottom:18,border:"1px solid var(--gold-border)"}}/>}
         <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10,marginBottom:8}}>
-          <div style={{width:20,height:20,border:"2px solid var(--color-border-secondary)",borderTopColor:"var(--color-text-info)",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>
-          <span style={{fontSize:15,fontWeight:500}}>Reading label…</span>
+          <div style={{width:20,height:20,border:"2px solid rgba(201,168,76,0.3)",borderTopColor:"var(--gold)",borderRadius:"50%",animation:"spin 0.7s linear infinite"}}/>
+          <span style={{fontSize:15,fontWeight:600,color:"var(--gold-light)"}}>Reading label…</span>
         </div>
-        <div style={{fontSize:13,color:"var(--color-text-secondary)"}}>About 3 seconds</div>
+        <div style={{fontSize:13,color:"var(--text-3)"}}>About 3 seconds</div>
       </div>}
 
       {scanStep==="verify"&&<div>
-        {newRx.trailerPreview&&<div style={{display:"flex",gap:10,alignItems:"center",marginBottom:14,padding:"10px 12px",background:"var(--color-background-success)",border:"1px solid var(--color-border-success)",borderRadius:10}}>
-          <img src={newRx.trailerPreview} style={{width:48,height:"auto",borderRadius:6,flexShrink:0,border:"1px solid var(--color-border-secondary)"}}/>
-          <div style={{fontSize:13,fontWeight:500,color:"var(--color-text-success)"}}>Label scanned — verify the fields below</div>
+        {newRx.trailerPreview&&<div style={{display:"flex",gap:10,alignItems:"center",marginBottom:14,padding:"10px 12px",background:"var(--green-bg)",border:"1px solid var(--green-border)",borderRadius:10}}>
+          <img src={newRx.trailerPreview} style={{width:48,height:"auto",borderRadius:6,flexShrink:0,border:"1px solid var(--gold-border)"}}/>
+          <div style={{fontSize:13,fontWeight:500,color:"var(--green)"}}>Label scanned — verify the fields below</div>
         </div>}
         {!selPtId&&<>{sec("Patient")}
           <div style={{marginBottom:10,position:"relative"}}>
-            <label style={lbl}>Patient <span style={{color:"var(--color-text-danger)"}}>*</span></label>
-            <input style={{...inp,borderColor:newRx.patientId?"var(--color-border-success)":"var(--color-border-secondary)"}} placeholder="Type name or patient ID…" value={ptSearch} onChange={e=>{setPtSearch(e.target.value);setNewRx(r=>({...r,patientId:""}));}}/>
-            {ptSearch&&!newRx.patientId&&<div style={{position:"absolute",top:"100%",left:0,right:0,zIndex:10,background:"var(--color-background-primary)",border:"1px solid var(--color-border-secondary)",borderRadius:8,maxHeight:160,overflowY:"auto",boxShadow:"0 4px 12px rgba(0,0,0,.1)"}}>
-              {patients.filter(p=>fullName(p).toLowerCase().includes(ptSearch.toLowerCase())||p.id?.toLowerCase().includes(ptSearch.toLowerCase())).map(p=><div key={p.id} onClick={()=>{setNewRx(r=>({...r,patientId:p.id}));setPtSearch(fullName(p)+" ("+p.id+")");}} style={{padding:"9px 12px",cursor:"pointer",fontSize:13,borderBottom:"1px solid var(--color-border-tertiary)"}}><span style={{fontWeight:500}}>{fullName(p)}</span><span style={{color:"var(--color-text-tertiary)"}}> {p.id}</span></div>)}
-              {patients.filter(p=>fullName(p).toLowerCase().includes(ptSearch.toLowerCase())).length===0&&<div style={{padding:"10px 12px",fontSize:13,color:"var(--color-text-tertiary)"}}>No match found</div>}
+            <label style={lS}>Patient <span style={{color:"var(--red)"}}>*</span></label>
+            <input style={{...inpS,borderColor:newRx.patientId?"var(--green-border)":"var(--border)"}} placeholder="Type name or patient ID…" value={ptSearch} onChange={e=>{setPtSearch(e.target.value);setNewRx(r=>({...r,patientId:""}));}}/>
+            {ptSearch&&!newRx.patientId&&<div style={{position:"absolute",top:"100%",left:0,right:0,zIndex:10,background:"var(--surface-solid)",border:"1px solid var(--gold-border)",borderRadius:8,maxHeight:160,overflowY:"auto",boxShadow:"var(--shadow-md)"}}>
+              {patients.filter(p=>fullName(p).toLowerCase().includes(ptSearch.toLowerCase())||p.id?.toLowerCase().includes(ptSearch.toLowerCase())).map(p=><div key={p.id} onClick={()=>{setNewRx(r=>({...r,patientId:p.id}));setPtSearch(fullName(p)+" ("+p.id+")");}} style={{padding:"9px 12px",cursor:"pointer",fontSize:13,borderBottom:"1px solid var(--border)",color:"var(--text-1)"}}>{fullName(p)} <span style={{color:"var(--text-3)"}}>{p.id}</span></div>)}
+              {patients.filter(p=>fullName(p).toLowerCase().includes(ptSearch.toLowerCase())).length===0&&<div style={{padding:"10px 12px",fontSize:13,color:"var(--text-3)"}}>No match found</div>}
             </div>}
           </div>
         </>}
         {sec("Script details")}
-        {row2(fld("Script date","script_date",newRx,setNewRx,"date"),fld("Valid until","valid_until",newRx,setNewRx,"date"))}
-        {row2(fld("Doctor","doctor",newRx,setNewRx,"text","e.g. Dr. Mokoena"),fld("Practice no.","practice_no",newRx,setNewRx,"text","optional"))}
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+          <div style={{marginBottom:10}}><label style={lS}>Script date</label><input style={inpS} type="date" value={newRx.script_date} onChange={e=>setNewRx(r=>({...r,script_date:e.target.value}))}/></div>
+          <div style={{marginBottom:10}}><label style={lS}>Valid until</label><input style={inpS} type="date" value={newRx.valid_until} onChange={e=>setNewRx(r=>({...r,valid_until:e.target.value}))}/></div>
+          <div style={{marginBottom:10}}><label style={lS}>Doctor</label><input style={inpS} value={newRx.doctor} placeholder="e.g. Dr. Mokoena" onChange={e=>setNewRx(r=>({...r,doctor:e.target.value}))}/></div>
+          <div style={{marginBottom:10}}><label style={lS}>Practice no.</label><input style={inpS} value={newRx.practice_no} placeholder="optional" onChange={e=>setNewRx(r=>({...r,practice_no:e.target.value}))}/></div>
+        </div>
         {sec("Medications")}
-        <div style={{marginBottom:10}}><label style={lbl}>Medications dispensed <span style={{color:"var(--color-text-danger)"}}>*</span></label><textarea style={{...inp,minHeight:68,resize:"vertical"}} value={newRx.items} onChange={e=>setNewRx(r=>({...r,items:e.target.value}))} placeholder="Filled from label scan"/></div>
-        <div style={{marginBottom:10}}><label style={lbl}>Dispensed by</label><input style={inp} value={newRx.dispensed_by_name} onChange={e=>setNewRx(r=>({...r,dispensed_by_name:e.target.value}))}/></div>
-        {row2(
-          <div style={{marginBottom:10}}><label style={lbl}>Total price (R)</label><input style={inp} value={newRx.total_price} onChange={e=>setNewRx(r=>({...r,total_price:e.target.value}))} placeholder="e.g. 245.00"/></div>,
-          <div style={{marginBottom:10}}><label style={lbl}>Diagnosis</label><input style={inp} value={newRx.diagnosis} onChange={e=>setNewRx(r=>({...r,diagnosis:e.target.value}))} placeholder="optional"/></div>
-        )}
-        <div style={{marginBottom:10,display:"flex",alignItems:"center",gap:10}}><input type="checkbox" checked={newRx.is_chronic} onChange={e=>setNewRx(r=>({...r,is_chronic:e.target.checked}))} style={{width:16,height:16,cursor:"pointer"}}/><label style={{fontSize:13,cursor:"pointer"}}>Chronic (repeat) script</label></div>
+        <div style={{marginBottom:10}}><label style={lS}>Medications dispensed <span style={{color:"var(--red)"}}>*</span></label><textarea style={{...inpS,minHeight:68,resize:"vertical"}} value={newRx.items} onChange={e=>setNewRx(r=>({...r,items:e.target.value}))} placeholder="Filled from label scan"/></div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+          <div style={{marginBottom:10}}>
+            <label style={lS}>Dispensed by</label>
+            <select style={inpS} value={newRx.dispensed_by_name} onChange={e=>setNewRx(r=>({...r,dispensed_by_name:e.target.value}))}>
+              <option value="">Select dispenser…</option>
+              {dispensers.map(n=><option key={n} value={n}>{n}</option>)}
+            </select>
+          </div>
+          <div style={{marginBottom:10}}><label style={lS}>Total price (R)</label><input style={inpS} value={newRx.total_price} placeholder="e.g. 245.00" onChange={e=>setNewRx(r=>({...r,total_price:e.target.value}))}/></div>
+        </div>
+        <div style={{marginBottom:10}}><label style={lS}>Diagnosis</label><input style={inpS} value={newRx.diagnosis} placeholder="optional" onChange={e=>setNewRx(r=>({...r,diagnosis:e.target.value}))}/></div>
+        <div style={{marginBottom:10,display:"flex",alignItems:"center",gap:10}}><input type="checkbox" checked={newRx.is_chronic} onChange={e=>setNewRx(r=>({...r,is_chronic:e.target.checked}))} style={{width:16,height:16,cursor:"pointer",accentColor:"var(--gold)"}}/><label style={{fontSize:13,cursor:"pointer",color:"var(--text-2)"}}>Chronic (repeat) script</label></div>
         {newRx.is_chronic&&<>
-          {fld("Repeats remaining","repeats",newRx,setNewRx,"number","e.g. 5")}
-          <div style={{marginBottom:10}}><label style={lbl}>Changes from previous</label><textarea style={{...inp,minHeight:52,resize:"vertical"}} value={newRx.changes} onChange={e=>setNewRx(r=>({...r,changes:e.target.value}))} placeholder="Leave blank if unchanged"/></div>
+          <div style={{marginBottom:10}}><label style={lS}>Repeats remaining</label><input style={inpS} type="number" value={newRx.repeats} onChange={e=>setNewRx(r=>({...r,repeats:e.target.value}))}/></div>
+          <div style={{marginBottom:10}}><label style={lS}>Changes from previous</label><textarea style={{...inpS,minHeight:52,resize:"vertical"}} value={newRx.changes} onChange={e=>setNewRx(r=>({...r,changes:e.target.value}))} placeholder="Leave blank if unchanged"/></div>
         </>}
-        <button onClick={()=>setScanStep("ready")} style={{marginTop:6,padding:"11px",fontSize:14,fontWeight:500,borderRadius:10,width:"100%",background:"var(--color-background-info)",color:"var(--color-text-info)",border:"1px solid var(--color-border-info)",cursor:"pointer"}}>Step 3 — Review &amp; Save</button>
+        <button onClick={()=>setScanStep("ready")} className="btn-primary" style={{marginTop:6,padding:"11px",width:"100%",fontSize:14,textAlign:"center"}}>Step 3 — Review &amp; Save</button>
       </div>}
 
       {scanStep==="ready"&&<div>
-        <div style={{marginBottom:14,padding:"12px 14px",background:"var(--color-background-success)",border:"1px solid var(--color-border-success)",borderRadius:10,fontSize:13,color:"var(--color-text-success)"}}><i className="ti ti-circle-check"/> Ready to save. Review then tap Save.</div>
+        <div style={{marginBottom:14,padding:"12px 14px",background:"var(--green-bg)",border:"1px solid var(--green-border)",borderRadius:10,fontSize:13,color:"var(--green)",display:"flex",alignItems:"center",gap:8}}><i className="ti ti-circle-check" style={{fontSize:18}}/> Ready to save. Review then tap Save.</div>
         <div style={{display:"grid",gridTemplateColumns:newRx.trailerPreview&&newRx.scriptPreview?"1fr 1fr":"1fr",gap:10,marginBottom:14}}>
-          {newRx.scriptPreview&&<div style={{borderRadius:10,overflow:"hidden",border:"1px solid var(--color-border-tertiary)"}}><div style={{fontSize:11,padding:"5px 10px",background:"var(--color-background-secondary)",color:"var(--color-text-secondary)",fontWeight:500}}>Prescription</div><img src={newRx.scriptPreview} style={{width:"100%",display:"block",maxHeight:180,objectFit:"contain",background:"#fff"}}/></div>}
-          {newRx.trailerPreview&&<div style={{borderRadius:10,overflow:"hidden",border:"1px solid var(--color-border-tertiary)"}}><div style={{fontSize:11,padding:"5px 10px",background:"var(--color-background-secondary)",color:"var(--color-text-secondary)",fontWeight:500}}>Trailer label</div><img src={newRx.trailerPreview} style={{width:"100%",display:"block",maxHeight:180,objectFit:"contain",background:"#fff"}}/></div>}
+          {newRx.scriptPreview&&<div style={{borderRadius:10,overflow:"hidden",border:"1px solid var(--gold-border)"}}><div style={{fontSize:11,padding:"5px 10px",background:"rgba(0,0,0,0.3)",color:"var(--gold-light)",fontWeight:500}}>Prescription</div><img src={newRx.scriptPreview} style={{width:"100%",display:"block",maxHeight:180,objectFit:"contain",background:"#0d1117"}}/></div>}
+          {newRx.trailerPreview&&<div style={{borderRadius:10,overflow:"hidden",border:"1px solid var(--gold-border)"}}><div style={{fontSize:11,padding:"5px 10px",background:"rgba(0,0,0,0.3)",color:"var(--gold-light)",fontWeight:500}}>Trailer label</div><img src={newRx.trailerPreview} style={{width:"100%",display:"block",maxHeight:180,objectFit:"contain",background:"#0d1117"}}/></div>}
         </div>
-        <div style={{fontSize:13,marginBottom:12,padding:"10px 12px",background:"var(--color-background-secondary)",borderRadius:8}}>
-          <div style={{fontWeight:500,marginBottom:4}}>{ptSearch||"Patient set"}</div>
-          <div style={{color:"var(--color-text-secondary)"}}>{newRx.items||"No medications"}</div>
-          <div style={{color:"var(--color-text-tertiary)",fontSize:12,marginTop:2}}>{fmtDate(newRx.script_date)} · {newRx.dispensed_by_name||currentUser.name}</div>
+        <div style={{fontSize:13,marginBottom:12,padding:"10px 12px",background:"var(--surface-solid)",borderRadius:8,border:"1px solid var(--border)"}}>
+          <div style={{fontWeight:600,marginBottom:4,color:"var(--text-1)"}}>{ptSearch||"Patient set"}</div>
+          <div style={{color:"var(--text-2)"}}>{newRx.items||"No medications"}</div>
+          <div style={{color:"var(--text-3)",fontSize:12,marginTop:2}}>{fmtDate(newRx.script_date)} · {newRx.dispensed_by_name||currentUser.name}</div>
         </div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-          <button onClick={()=>setScanStep("verify")} style={{padding:"11px",fontSize:14,borderRadius:10,border:"1px solid var(--color-border-secondary)",background:"var(--color-background-secondary)",color:"var(--color-text-secondary)",cursor:"pointer"}}>← Edit fields</button>
-          <button onClick={addScript} disabled={loading} style={{padding:"11px",fontSize:14,fontWeight:500,borderRadius:10,background:"var(--color-background-success)",color:"var(--color-text-success)",border:"1px solid var(--color-border-success)",cursor:"pointer",opacity:loading?.6:1}}>{loading?"Saving…":"Save script"}</button>
+          <button onClick={()=>setScanStep("verify")} className="btn-ghost" style={{padding:"11px"}}>← Edit fields</button>
+          <button onClick={addScript} disabled={loading} className="btn-primary" style={{padding:"11px",textAlign:"center"}}>{loading?"Saving…":"Save script"}</button>
         </div>
-        <button onClick={resetScan} style={{marginTop:8,width:"100%",padding:"8px",fontSize:12,borderRadius:8,border:"none",background:"transparent",color:"var(--color-text-tertiary)",cursor:"pointer"}}>Start over</button>
+        <button onClick={resetScan} style={{marginTop:8,width:"100%",padding:"8px",fontSize:12,borderRadius:8,border:"none",background:"transparent",color:"var(--text-3)",cursor:"pointer",fontFamily:"var(--font-sans)"}}>Start over</button>
       </div>}
     </div>
   );
 }
 
-// ── App ──
+// ── App ──────────────────────────────────────────────────────────────────────
 function App(){
   const[currentUser,setCurrentUser]=useState(null);
   const[patients,setPatients]=useState([]);
@@ -673,15 +770,12 @@ function App(){
   const[editPt,setEditPt]=useState(null);
   const[showUploadInProfile,setShowUploadInProfile]=useState(false);
   const[showStaffMgr,setShowStaffMgr]=useState(false);
-  const[staffList,setStaffList]=useState(STAFF.map(s=>({...s,pin:getPin(s)})));
-  // Scanner state lives here and is passed down
+  const[staffList,setStaffList]=useState(INITIAL_STAFF.map(s=>({...s,pin:getPin(s)})));
   const[pendingScan,setPendingScan]=useState(null);
   const[rawImg,setRawImg]=useState(null);
   const fileRef=useRef();
 
   useEffect(()=>{if(currentUser)loadPatients();},[currentUser]);
-
-  // Keep session alive — reset timer on any user interaction, timeout after 8 hours
   useEffect(()=>{
     if(!currentUser)return;
     let timer=setTimeout(()=>setCurrentUser(null),8*60*60*1000);
@@ -689,56 +783,50 @@ function App(){
     window.addEventListener("click",reset);window.addEventListener("keydown",reset);window.addEventListener("touchstart",reset);
     return()=>{clearTimeout(timer);window.removeEventListener("click",reset);window.removeEventListener("keydown",reset);window.removeEventListener("touchstart",reset);};
   },[currentUser]);
-  async function loadPatients(){setLoading(true);try{const data=await sb.query("patients","GET",null,"?order=surname.asc");setPatients(data||[]);}catch(e){showToast("Could not load patients","error");}setLoading(false);}
-  async function loadScripts(pid){try{const data=await sb.query("prescriptions","GET",null,"?patient_id=eq."+pid+"&order=script_date.desc");setScripts(data||[]);}catch(e){showToast("Could not load scripts","error");}}
+
+  async function loadPatients(){setLoading(true);try{const d=await sb.query("patients","GET",null,"?order=surname.asc");setPatients(d||[]);}catch(e){showToast("Could not load patients","error");}setLoading(false);}
+  async function loadScripts(pid){try{const d=await sb.query("prescriptions","GET",null,"?patient_id=eq."+pid+"&order=script_date.desc");setScripts(d||[]);}catch(e){showToast("Could not load scripts","error");}}
   async function auditLog(action,detail){try{await sb.query("audit_log","POST",{staff_name:currentUser.name,staff_id:currentUser.id,action,detail});}catch(e){}}
 
   const TABS=currentUser?["Search",can(currentUser,"addPatient")&&"Add Patient",can(currentUser,"upload")&&"Upload Script",currentUser.role==="admin"&&"Staff"].filter(Boolean):[];
   function showToast(msg,type="success"){setToast({msg,type});setTimeout(()=>setToast(null),3500);}
-
   const filteredPts=patients.filter(p=>{const q=search.toLowerCase();return fullName(p).toLowerCase().includes(q)||p.id?.toLowerCase().includes(q)||p.disp_profile_no?.toLowerCase().includes(q)||p.aid_number?.toLowerCase().includes(q)||p.id_number?.includes(q);});
 
-  if(!currentUser)return React.createElement(LoginScreen,{onLogin:setCurrentUser});
+  if(!currentUser)return React.createElement(LoginScreen,{onLogin:setCurrentUser,staffList});
 
   async function addPatient(){
-    const np=newPt;
-    if(!np.first_name.trim()||!np.surname.trim())return showToast("First name and surname required","error");
+    if(!newPt.first_name.trim()||!newPt.surname.trim())return showToast("First name and surname required","error");
     setLoading(true);
-    try{const id=genPtId(patients);await sb.query("patients","POST",{...np,id,created_by:currentUser.name});setPatients(p=>[...p,{...np,id}].sort((a,b)=>a.surname.localeCompare(b.surname)));await auditLog("Added patient",np.first_name+" "+np.surname+" ("+id+")");setNewPt({disp_profile_no:"",first_name:"",surname:"",dob:"",id_number:"",phone:"",email:"",address:"",aid_name:"",aid_number:"",dependant_code:"",nok_name:"",nok_phone:""});showToast(np.first_name+" "+np.surname+" added ("+id+")");}
+    try{const id=genPtId(patients);await sb.query("patients","POST",{...newPt,id,created_by:currentUser.name});setPatients(p=>[...p,{...newPt,id}].sort((a,b)=>a.surname.localeCompare(b.surname)));await auditLog("Added patient",newPt.first_name+" "+newPt.surname+" ("+id+")");setNewPt({disp_profile_no:"",first_name:"",surname:"",dob:"",id_number:"",phone:"",email:"",address_line1:"",address_line2:"",address_line3:"",address_province:"",address_postal:"",aid_name:"",aid_number:"",dependant_code:"",nok_name:"",nok_phone:""});showToast(newPt.first_name+" "+newPt.surname+" added ("+id+")");}
     catch(e){showToast("Failed: "+e.message,"error");}
     setLoading(false);
   }
   async function saveEditedScript(rxId,form){await sb.query("prescriptions","PATCH",form,"?id=eq."+rxId);setScripts(s=>s.map(r=>r.id===rxId?{...r,...form}:r));await auditLog("Edited script",rxId);setEditRx(null);showToast("Script updated");}
-  async function deleteScript(rxId){
-    if(!window.confirm("Permanently delete script "+rxId+"? This cannot be undone."))return;
-    try{await sb.query("prescriptions","DELETE",null,"?id=eq."+rxId);setScripts(s=>s.filter(r=>r.id!==rxId));await auditLog("Deleted script",rxId);showToast("Script deleted");}
-    catch(e){showToast("Delete failed: "+e.message,"error");}
-  }
-  function handleScriptSaved(rx){setScripts(s=>[rx,...s]);setShowUploadInProfile(false);showToast("Script "+rx.id+" saved");}
-
-  // Camera: open file input, on change open DocScanner
+  async function saveEditedPatient(id,form){await sb.query("patients","PATCH",form,"?id=eq."+id);setPatients(p=>p.map(x=>x.id===id?{...x,...form}:x));if(selPt?.id===id)setSelPt(x=>({...x,...form}));await auditLog("Edited patient",id);setEditPt(null);showToast("Patient updated");}
+  async function deleteScript(rxId){if(!window.confirm("Permanently delete "+rxId+"?"))return;try{await sb.query("prescriptions","DELETE",null,"?id=eq."+rxId);setScripts(s=>s.filter(r=>r.id!==rxId));await auditLog("Deleted script",rxId);showToast("Script deleted");}catch(e){showToast("Delete failed: "+e.message,"error");}}
+  function handleScriptSaved(rx){setScripts(s=>[rx,...s]);setShowUploadInProfile(false);}
   function requestScan(){fileRef.current.value="";fileRef.current.click();}
   function onFileChange(e){const f=e.target.files[0];if(f)setRawImg(URL.createObjectURL(f));}
   function onScannerAccept(file,preview){setRawImg(null);setPendingScan({file,preview});}
-  function onScannerRetake(){setRawImg(null);}
+
+  const navHome=()=>{setTab(0);setSelPt(null);setScripts([]);setShowUploadInProfile(false);};
 
   return(
     <div className="page-wrap">
       <input ref={fileRef} type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={onFileChange}/>
-      {rawImg&&<div style={{position:"fixed",inset:0,zIndex:2000}}><DocScanner imageSrc={rawImg} onAccept={onScannerAccept} onRetake={onScannerRetake}/></div>}
+      {rawImg&&<div style={{position:"fixed",inset:0,zIndex:2000}}><DocScanner imageSrc={rawImg} onAccept={onScannerAccept} onRetake={()=>setRawImg(null)}/></div>}
       {toast&&<div className={"toast "+(toast.type==="error"?"toast-error":"toast-success")}>{toast.msg}</div>}
       {loading&&<div className="progress-bar"/>}
-      {editRx&&<EditScriptModal rx={editRx} onSave={saveEditedScript} onClose={()=>setEditRx(null)}/>}
-      {editPt&&<EditPatientModal pt={editPt} onSave={async(id,form)=>{await sb.query("patients","PATCH",form,"?id=eq."+id);setPatients(p=>p.map(x=>x.id===id?{...x,...form}:x));if(selPt?.id===id)setSelPt(p=>({...p,...form}));await auditLog("Edited patient",id);setEditPt(null);showToast("Patient updated");}} onClose={()=>setEditPt(null)}/>}
+      {editRx&&<EditScriptModal rx={editRx} onSave={saveEditedScript} onClose={()=>setEditRx(null)} staffList={staffList}/>}
+      {editPt&&<EditPatientModal pt={editPt} onSave={saveEditedPatient} onClose={()=>setEditPt(null)}/>}
       {showStaffMgr&&<StaffManagerModal staffList={staffList} setStaffList={setStaffList} currentUser={currentUser} onClose={()=>setShowStaffMgr(false)}/>}
 
+      {/* Header */}
       <div className="header-bar">
-        <div className="logo-mark" onClick={()=>{setTab(0);setSelPt(null);setScripts([]);}} title="Home">
-          <i className="ti ti-pill" aria-hidden="true"/>
-        </div>
-        <div onClick={()=>{setTab(0);setSelPt(null);setScripts([]);}} style={{cursor:"pointer"}}>
+        <div className="logo-mark" onClick={navHome}><i className="ti ti-pill" style={{color:"var(--navy)"}}/></div>
+        <div onClick={navHome} style={{cursor:"pointer"}}>
           <div className="brand-name">PharmaSave</div>
-          <div className="brand-sub">PRESCRIPTION MANAGER</div>
+          <div className="brand-sub">Prescription Manager</div>
         </div>
         <div className="user-chip">
           <span className="user-name">{currentUser.name.split(" ")[0]}</span>
@@ -747,137 +835,157 @@ function App(){
         <button className="signout-btn" onClick={()=>{setCurrentUser(null);setTab(0);setSelPt(null);setPatients([]);setScripts([]);}}>Sign out</button>
       </div>
 
+      {/* Tabs */}
       <div className="tab-bar">
-        {TABS.map((t,i)=><button key={t} className={"tab-btn"+(tab===i&&!(t==="Search"&&selPt)?" active":"")} onClick={()=>{if(t==="Search"){setSelPt(null);setExpRx(null);setScripts([]);setShowUploadInProfile(false);}setTab(i);}}>{t}</button>)}
+        {TABS.map((t,i)=><button key={t} className={"tab-btn"+(tab===i?" active":"")} onClick={()=>{if(t==="Search")navHome();setTab(i);}}>{t}</button>)}
       </div>
 
+      {/* Search list */}
       {TABS[tab]==="Search"&&!selPt&&<>
         <div className="search-wrap">
-          <i className="ti ti-search" aria-hidden="true"/>
+          <i className="ti ti-search"/>
           <input className="search-input" placeholder="Search by name, patient ID, dispensing profile, SA ID or medical aid no…" value={search} onChange={e=>setSearch(e.target.value)} autoFocus/>
         </div>
-        {!search&&<div className="empty-state"><i className="ti ti-users" style={{fontSize:32,display:"block",marginBottom:8,opacity:0.4}}/>{loading?"Loading patients…":"Type to search patients."}</div>}
+        {!search&&<div className="empty-state"><i className="ti ti-users" style={{fontSize:36,display:"block",marginBottom:10,color:"var(--gold)",opacity:0.3}}/>{loading?"Loading patients…":"Type to search patients."}</div>}
         {filteredPts.map(p=>{
-          const initials=(p.first_name[0]||"")+(p.surname[0]||"");
+          const ini=(p.first_name?.[0]||"")+(p.surname?.[0]||"");
           return<div key={p.id} className="pt-row" onClick={async()=>{setSelPt(p);setShowUploadInProfile(false);await loadScripts(p.id);}}>
-            <div className="avatar av-navy">{initials.toUpperCase()}</div>
+            <div className="avatar">{ini.toUpperCase()}</div>
             <div style={{flex:1,minWidth:0}}>
-              <div style={{fontWeight:600,fontSize:14,color:"var(--navy)"}}>{fullName(p)}</div>
+              <div style={{fontWeight:600,fontSize:14,color:"var(--text-1)"}}>{fullName(p)}</div>
               <div style={{fontSize:12,color:"var(--text-3)",marginTop:2}}>{p.id}{p.disp_profile_no?" · "+p.disp_profile_no:""} · {p.aid_name||"No medical aid"}</div>
             </div>
-            <i className="ti ti-chevron-right" style={{color:"var(--text-3)",fontSize:16}} aria-hidden="true"/>
+            <i className="ti ti-chevron-right" style={{color:"var(--text-3)"}}/>
           </div>;
         })}
       </>}
 
-      {TABS[tab]==="Search"&&selPt&&<div>
-        <button onClick={()=>{setSelPt(null);setExpRx(null);setScripts([]);setShowUploadInProfile(false);}} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",color:"var(--color-text-info)",cursor:"pointer",fontSize:13,padding:0,marginBottom:14}}><i className="ti ti-arrow-left"/> Back</button>
-        <div style={{background:"var(--color-background-secondary)",border:"1px solid var(--color-border-tertiary)",borderRadius:12,padding:"14px 16px",marginBottom:16}}>
-          <div style={{display:"flex",gap:12,alignItems:"flex-start",marginBottom:10}}>
-            <div style={{width:44,height:44,borderRadius:"50%",background:"var(--color-background-info)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><i className="ti ti-user" style={{fontSize:22,color:"var(--color-text-info)"}}/></div>
-            <div style={{flex:1}}><div style={{fontSize:17,fontWeight:500}}>{fullName(selPt)}</div><div style={{fontSize:12,color:"var(--color-text-secondary)",marginTop:2}}>ID: {selPt.id}{selPt.disp_profile_no?" · Dispensing profile: "+selPt.disp_profile_no:""}</div></div>
+      {/* Patient detail */}
+      {TABS[tab]==="Search"&&selPt&&<div style={{animation:"fadeIn 0.2s ease"}}>
+        <button onClick={()=>{setSelPt(null);setExpRx(null);setScripts([]);setShowUploadInProfile(false);}} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",color:"var(--gold-light)",cursor:"pointer",fontSize:13,fontWeight:500,padding:0,marginBottom:16,fontFamily:"var(--font-sans)"}}><i className="ti ti-arrow-left"/> Back to search</button>
+        <div className="profile-card">
+          <div className="profile-header">
+            <div className="avatar" style={{width:50,height:50,fontSize:16}}>{(selPt.first_name?.[0]||"")+(selPt.surname?.[0]||"")}</div>
+            <div style={{flex:1}}>
+              <div className="pt-name">{fullName(selPt)}</div>
+              <div className="pt-meta">{selPt.id}{selPt.disp_profile_no?" · Dispensing: "+selPt.disp_profile_no:""}</div>
+            </div>
+            {currentUser.role==="admin"&&<button onClick={()=>setEditPt(selPt)} className="btn-ghost" style={{fontSize:12,padding:"6px 12px",display:"flex",alignItems:"center",gap:5}}><i className="ti ti-pencil"/>Edit</button>}
           </div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"5px 20px",fontSize:13}}>
-            {[["DOB",fmtDate(selPt.dob)],["SA ID",selPt.id_number],["Phone",selPt.phone],["Email",selPt.email],["Medical aid",selPt.aid_name],["Aid number",selPt.aid_number],["Dependant code",selPt.dependant_code],["Address",selPt.address],["Next of kin",selPt.nok_name?selPt.nok_name+" · "+selPt.nok_phone:""]].filter(([,v])=>v).map(([l,v])=><div key={l}><span style={{color:"var(--color-text-tertiary)",fontSize:11}}>{l} </span><span>{v}</span></div>)}
+          <div className="info-grid">
+            {[["DOB",fmtDate(selPt.dob)],["SA ID",selPt.id_number],["Phone",selPt.phone],["Email",selPt.email],["Medical aid",selPt.aid_name],["Aid number",selPt.aid_number],["Dependant code",selPt.dependant_code],["Address",[selPt.address_line1,selPt.address_line2,selPt.address_line3,selPt.address_province,selPt.address_postal].filter(Boolean).join(", ")||selPt.address||""],["Next of kin",selPt.nok_name?selPt.nok_name+" · "+selPt.nok_phone:""]].filter(([,v])=>v).map(([l,v])=><div key={l} className="info-item"><label>{l}</label><span>{v}</span></div>)}
           </div>
         </div>
 
         {can(currentUser,"upload")&&<div style={{marginBottom:16}}>
           {!showUploadInProfile
-            ?<button onClick={()=>setShowUploadInProfile(true)} style={{width:"100%",padding:"10px",fontSize:13,fontWeight:500,borderRadius:10,border:"1px solid var(--color-border-info)",background:"var(--color-background-info)",color:"var(--color-text-info)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><i className="ti ti-plus"/> Upload new prescription</button>
-            :<div style={{border:"1px solid var(--color-border-tertiary)",borderRadius:12,padding:"14px 16px"}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-                <div style={{fontSize:14,fontWeight:500}}>New prescription for {selPt.first_name}</div>
-                <button onClick={()=>setShowUploadInProfile(false)} style={{background:"none",border:"none",fontSize:18,cursor:"pointer",color:"var(--color-text-secondary)"}}><i className="ti ti-x"/></button>
+            ?<button className="upload-btn" onClick={()=>setShowUploadInProfile(true)}>Upload new prescription for {selPt.first_name}</button>
+            :<div style={{background:"var(--surface-solid)",border:"1px solid var(--gold-border)",borderRadius:14,padding:"16px"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+                <div style={{fontWeight:600,fontSize:14,color:"var(--gold-light)"}}>New prescription — {selPt.first_name} {selPt.surname}</div>
+                <button onClick={()=>setShowUploadInProfile(false)} style={{background:"none",border:"none",fontSize:18,cursor:"pointer",color:"var(--text-3)"}}><i className="ti ti-x"/></button>
               </div>
-              <UploadScriptPanel currentUser={currentUser} patients={patients} selPtId={selPt.id} onSaved={handleScriptSaved} onAudit={auditLog} compact={true} requestScan={requestScan} pendingScan={pendingScan} clearPendingScan={()=>setPendingScan(null)}/>
+              <UploadScriptPanel currentUser={currentUser} patients={patients} selPtId={selPt.id} onSaved={handleScriptSaved} onAudit={auditLog} compact={true} requestScan={requestScan} pendingScan={pendingScan} clearPendingScan={()=>setPendingScan(null)} staffList={staffList}/>
             </div>
           }
         </div>}
 
-        <div style={{fontSize:13,fontWeight:500,marginBottom:10,color:"var(--color-text-secondary)"}}>{scripts.length} prescription{scripts.length!==1?"s":""} on file</div>
-        {scripts.length===0&&!loading&&<div style={{textAlign:"center",color:"var(--color-text-tertiary)",padding:"24px 0",fontSize:14}}>No scripts on file yet.</div>}
+        <div style={{fontSize:13,fontWeight:600,color:"var(--gold-light)",marginBottom:12,opacity:0.8}}>{scripts.length} prescription{scripts.length!==1?"s":""} on file</div>
+        {scripts.length===0&&!loading&&<div className="empty-state"><i className="ti ti-file-off" style={{fontSize:28,display:"block",marginBottom:8,color:"var(--gold)",opacity:0.3}}/> No prescriptions on file yet.</div>}
         {scripts.map(rx=>{
-          const isOpen=expRx===rx.id;const isExpired=rx.valid_until&&new Date(rx.valid_until)<new Date();
-          return<div key={rx.id} style={{border:"1px solid var(--color-border-tertiary)",borderRadius:10,marginBottom:8,overflow:"hidden",background:"var(--color-background-primary)"}}>
-            <div onClick={()=>setExpRx(isOpen?null:rx.id)} style={{display:"flex",alignItems:"center",gap:12,padding:"11px 14px",cursor:"pointer"}}>
-              <i className="ti ti-file-text" style={{fontSize:20,color:"var(--color-text-info)",flexShrink:0}}/>
+          const isOpen=expRx===rx.id,isExpired=rx.valid_until&&new Date(rx.valid_until)<new Date();
+          return<div key={rx.id} className="rx-card">
+            <div className="rx-header" onClick={()=>setExpRx(isOpen?null:rx.id)}>
+              <div style={{width:36,height:36,borderRadius:10,background:rx.is_chronic?"var(--amber-bg)":"var(--surface-solid-2)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,border:"1px solid "+(rx.is_chronic?"var(--amber-border)":"var(--border)")}}><i className="ti ti-file-text" style={{fontSize:18,color:rx.is_chronic?"var(--amber)":"var(--text-3)"}}/></div>
               <div style={{flex:1,minWidth:0}}>
-                <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}><span style={{fontWeight:500,fontSize:13}}>{rx.id}</span>{rx.is_chronic&&badge("Chronic","warning")}{isExpired&&badge("Expired","danger")}{rx.repeats>0&&badge(rx.repeats+" repeat"+(rx.repeats>1?"s":""),"info")}</div>
-                <div style={{fontSize:12,color:"var(--color-text-secondary)",marginTop:2}}>{fmtDate(rx.script_date)} · {rx.doctor||"Doctor not recorded"}</div>
+                <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
+                  <span className="rx-id">{rx.id}</span>
+                  {rx.is_chronic&&<span className="badge badge-chronic">Chronic</span>}
+                  {isExpired&&<span className="badge badge-expired">Expired</span>}
+                  {rx.repeats>0&&<span className="badge badge-repeats">{rx.repeats} repeat{rx.repeats>1?"s":""}</span>}
+                </div>
+                <div className="rx-sub">{fmtDate(rx.script_date)} · {rx.doctor||"Doctor not recorded"}</div>
               </div>
-              {currentUser.role==="admin"&&<button onClick={e=>{e.stopPropagation();setEditRx(rx);}} title="Edit" style={{background:"none",border:"none",cursor:"pointer",fontSize:16,color:"var(--color-text-secondary)",padding:"4px 6px"}}><i className="ti ti-pencil"/></button>}
-              {currentUser.role==="admin"&&<button onClick={e=>{e.stopPropagation();deleteScript(rx.id);}} title="Delete" style={{background:"none",border:"none",cursor:"pointer",fontSize:16,color:"var(--color-text-danger)",padding:"4px 6px"}}><i className="ti ti-trash"/></button>}
-              <i className={"ti ti-chevron-"+(isOpen?"up":"down")} style={{color:"var(--color-text-tertiary)"}}/>
+              {currentUser.role==="admin"&&<button onClick={e=>{e.stopPropagation();setEditRx(rx);}} className="icon-btn" title="Edit"><i className="ti ti-pencil"/></button>}
+              {currentUser.role==="admin"&&<button onClick={e=>{e.stopPropagation();deleteScript(rx.id);}} className="icon-btn" title="Delete" style={{color:"var(--red)"}}><i className="ti ti-trash"/></button>}
+              <i className={"ti ti-chevron-"+(isOpen?"up":"down")} style={{color:"var(--text-3)"}}/>
             </div>
-            {isOpen&&<div style={{borderTop:"1px solid var(--color-border-tertiary)",padding:"12px 14px"}}>
-              {[["Script date",fmtDate(rx.script_date)],["Valid until",fmtDate(rx.valid_until)],["Doctor",rx.doctor],["Medications",rx.items],["Diagnosis",rx.diagnosis],["Dispensed by",rx.dispensed_by_name],["Total price",rx.total_price?"R"+rx.total_price:""]].map(([l,v])=>v?<div key={l} style={{marginBottom:8,fontSize:13}}><div style={{fontSize:11,color:"var(--color-text-tertiary)",marginBottom:2}}>{l}</div><div>{v}</div></div>:null)}
-              {rx.is_chronic&&rx.changes&&<div style={{marginBottom:8,padding:"8px 12px",background:"var(--color-background-warning)",borderRadius:8,border:"1px solid var(--color-border-warning)"}}><div style={{fontSize:11,color:"var(--color-text-warning)",marginBottom:2}}>Changes from previous script</div><div style={{fontSize:13,color:"var(--color-text-warning)"}}>{rx.changes}</div></div>}
+            {isOpen&&<div className="rx-body">
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px 20px",marginBottom:12}}>
+                {[["Script date",fmtDate(rx.script_date)],["Valid until",fmtDate(rx.valid_until)],["Doctor",rx.doctor],["Dispensed by",rx.dispensed_by_name],["Total price",rx.total_price?"R"+rx.total_price:""],["Diagnosis",rx.diagnosis]].map(([l,v])=>v?<div key={l}><div className="field-label">{l}</div><div style={{fontSize:13,color:"var(--text-1)"}}>{v}</div></div>:null)}
+              </div>
+              {rx.items&&<><div className="field-label">Medications</div><div style={{fontSize:13,color:"var(--text-1)",marginBottom:12,lineHeight:1.6}}>{rx.items}</div></>}
+              {rx.is_chronic&&rx.changes&&<div className="changes-box" style={{marginBottom:12}}><div className="field-label" style={{marginBottom:4}}>Changes from previous script</div><div style={{fontSize:13,color:"var(--amber)"}}>{rx.changes}</div></div>}
               {(rx.script_img_path||rx.trailer_img_path)&&<ScriptImages scriptPath={rx.script_img_path} trailerPath={rx.trailer_img_path} rxId={rx.id} patientName={fullName(selPt)}/>}
             </div>}
           </div>;
         })}
       </div>}
 
+      {/* Add Patient */}
       {TABS[tab]==="Add Patient"&&<div style={{maxWidth:480}}>
-        {sec("Identity")}
-        {row2(fld("First name","first_name",newPt,setNewPt,"text","e.g. Thandi",true),fld("Surname","surname",newPt,setNewPt,"text","e.g. Dlamini",true))}
-        <div style={{marginBottom:10}}>
-          <label style={lbl}>SA ID number (13 digits)</label>
-          <input style={inp} type="text" value={newPt.id_number||""} placeholder="e.g. 9801125768098" maxLength={13}
-            onChange={e=>{
-              const val=e.target.value.replace(/\D/g,"").slice(0,13);
-              const dob=val.length>=6?parseSaId(val):null;
-              setNewPt(v=>({...v,id_number:val,...(dob?{dob}:{})}));
-            }}/>
-          {newPt.id_number&&newPt.id_number.length===13&&<div style={{fontSize:11,color:"var(--color-text-success)",marginTop:3}}>✓ Valid length · DOB auto-filled from ID</div>}
-          {newPt.id_number&&newPt.id_number.length>0&&newPt.id_number.length<13&&<div style={{fontSize:11,color:"var(--color-text-warning)",marginTop:3}}>{13-newPt.id_number.length} digits remaining</div>}
+        <div className="section-title">Identity</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+          <Fld label="First name" name="first_name" val={newPt} set={setNewPt} req/>
+          <Fld label="Surname" name="surname" val={newPt} set={setNewPt} req/>
         </div>
         <div style={{marginBottom:10}}>
-          <label style={lbl}>Date of birth</label>
-          <input style={inp} type="date" value={newPt.dob||""} onChange={e=>setNewPt(v=>({...v,dob:e.target.value}))}/>
-          <div style={{fontSize:11,color:"var(--color-text-tertiary)",marginTop:3}}>Auto-filled from SA ID. Edit if needed.</div>
+          <label className="form-label">SA ID number (13 digits)</label>
+          <input className="inp-legacy" type="text" value={newPt.id_number||""} placeholder="e.g. 9801125768098" maxLength={13}
+            onChange={e=>{const v=e.target.value.replace(/\D/g,"").slice(0,13);const dob=v.length>=6?parseSaId(v):null;setNewPt(x=>({...x,id_number:v,...(dob?{dob}:{})}));}}/>
+          {newPt.id_number?.length===13&&<div style={{fontSize:11,color:"var(--green)",marginTop:3}}>✓ DOB auto-filled from ID</div>}
+          {newPt.id_number?.length>0&&newPt.id_number.length<13&&<div style={{fontSize:11,color:"var(--amber)",marginTop:3}}>{13-newPt.id_number.length} digits remaining</div>}
         </div>
-        {sec("Contact")}
+        <Fld label="Date of birth" name="dob" val={newPt} set={setNewPt} type="date" hint="Auto-filled from SA ID. Edit if needed."/>
+        <div className="section-title" style={{marginTop:14}}>Contact</div>
         <div style={{marginBottom:10}}>
-          <label style={lbl}>Phone number (with country code)</label>
-          <input style={inp} type="tel" value={newPt.phone||""} placeholder="+27605528414"
+          <label className="form-label">Phone number</label>
+          <input className="inp-legacy" type="tel" value={newPt.phone||""} placeholder="+27605528414"
             onBlur={e=>setNewPt(v=>({...v,phone:fmtPhone(e.target.value)}))}
             onChange={e=>setNewPt(v=>({...v,phone:e.target.value}))}/>
-          <div style={{fontSize:11,color:"var(--color-text-tertiary)",marginTop:3}}>SA numbers: start with 0 or +27. Auto-converts on exit.</div>
+          <div style={{fontSize:11,color:"var(--text-3)",marginTop:3}}>Auto-converts 0xxx to +27xxx on exit.</div>
         </div>
-        {fld("Email","email",newPt,setNewPt,"email","optional")}
-        {sec("Address")}
-        {fld("Address line 1","address_line1",newPt,setNewPt,"text","Street number and name")}
-        {fld("Address line 2","address_line2",newPt,setNewPt,"text","Suburb / complex / unit")}
-        {fld("Address line 3","address_line3",newPt,setNewPt,"text","City / town")}
-        {row2(fld("Province","address_province",newPt,setNewPt,"text","e.g. Gauteng"),fld("Postal code","address_postal",newPt,setNewPt,"text","e.g. 2196"))}
-        {sec("Medical aid")}
-        {row2(fld("Medical aid name","aid_name",newPt,setNewPt,"text","e.g. Discovery Health"),fld("Medical aid number","aid_number",newPt,setNewPt,"text","e.g. DH-8821334"))}
-        {fld("Dependant code","dependant_code",newPt,setNewPt,"text","00 = main, 01 = first dependant")}
-        {sec("System reference")}
-        {fld("Dispensing system profile number","disp_profile_no",newPt,setNewPt,"text","e.g. DISP-4421")}
-        {sec("Emergency contact")}
-        {row2(fld("Next of kin name","nok_name",newPt,setNewPt,"text","Full name"),fld("Next of kin phone","nok_phone",newPt,setNewPt,"tel","e.g. +27821112222"))}
-        <button onClick={addPatient} disabled={loading} style={{marginTop:8,padding:"10px 20px",fontSize:14,fontWeight:500,borderRadius:8,width:"100%",background:"var(--color-background-info)",color:"var(--color-text-info)",border:"1px solid var(--color-border-info)",cursor:"pointer",opacity:loading?.6:1}}>{loading?"Saving…":"Add patient"}</button>
+        <Fld label="Email" name="email" val={newPt} set={setNewPt} type="email" ph="optional"/>
+        <div className="section-title" style={{marginTop:14}}>Address</div>
+        <Fld label="Line 1" name="address_line1" val={newPt} set={setNewPt} ph="Street number and name"/>
+        <Fld label="Line 2" name="address_line2" val={newPt} set={setNewPt} ph="Suburb / complex / unit"/>
+        <Fld label="Line 3" name="address_line3" val={newPt} set={setNewPt} ph="City / town"/>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+          <Fld label="Province" name="address_province" val={newPt} set={setNewPt} ph="e.g. Gauteng"/>
+          <Fld label="Postal code" name="address_postal" val={newPt} set={setNewPt}/>
+        </div>
+        <div className="section-title" style={{marginTop:14}}>Medical aid</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+          <Fld label="Medical aid name" name="aid_name" val={newPt} set={setNewPt} ph="e.g. Discovery Health"/>
+          <Fld label="Medical aid number" name="aid_number" val={newPt} set={setNewPt}/>
+        </div>
+        <Fld label="Dependant code" name="dependant_code" val={newPt} set={setNewPt} ph="00 = main, 01 = first"/>
+        <div className="section-title" style={{marginTop:14}}>System reference</div>
+        <Fld label="Dispensing system profile number" name="disp_profile_no" val={newPt} set={setNewPt} ph="e.g. DISP-4421"/>
+        <div className="section-title" style={{marginTop:14}}>Emergency contact</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+          <Fld label="Next of kin name" name="nok_name" val={newPt} set={setNewPt}/>
+          <Fld label="Next of kin phone" name="nok_phone" val={newPt} set={setNewPt} type="tel"/>
+        </div>
+        <button onClick={addPatient} disabled={loading} className="btn-primary" style={{marginTop:12,width:"100%",padding:"11px",textAlign:"center"}}>{loading?"Saving…":"Add patient"}</button>
       </div>}
 
-      {TABS[tab]==="Upload Script"&&<UploadScriptPanel currentUser={currentUser} patients={patients} selPtId={null} onSaved={rx=>{showToast("Script "+rx.id+" saved");setTab(0);}} onAudit={auditLog} requestScan={requestScan} pendingScan={pendingScan} clearPendingScan={()=>setPendingScan(null)}/>}
+      {/* Upload Script */}
+      {TABS[tab]==="Upload Script"&&<UploadScriptPanel currentUser={currentUser} patients={patients} selPtId={null} onSaved={rx=>{showToast("Script "+rx.id+" saved");setTab(0);}} onAudit={auditLog} requestScan={requestScan} pendingScan={pendingScan} clearPendingScan={()=>setPendingScan(null)} staffList={staffList}/>}
 
+      {/* Staff */}
       {TABS[tab]==="Staff"&&<div>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-          <div style={{fontSize:13,color:"var(--text-2)",padding:"10px 14px",background:"var(--amber-bg)",border:"1px solid var(--amber-border)",borderRadius:"var(--radius-md)",flex:1,marginRight:10}}>
-            <i className="ti ti-info-circle" style={{marginRight:6}} aria-hidden="true"/>Locum PINs regenerate daily at midnight.
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,gap:10}}>
+          <div style={{flex:1,fontSize:13,color:"var(--text-2)",padding:"10px 14px",background:"var(--amber-bg)",border:"1px solid var(--amber-border)",borderRadius:10}}>
+            <i className="ti ti-info-circle" style={{marginRight:6}}/>Locum PINs regenerate daily at midnight.
           </div>
-          <button className="btn-primary" onClick={()=>setShowStaffMgr(true)} style={{whiteSpace:"nowrap",padding:"10px 14px",fontSize:13}}><i className="ti ti-users-plus" style={{marginRight:6}}/>Manage staff</button>
+          <button className="btn-primary" onClick={()=>setShowStaffMgr(true)} style={{padding:"10px 14px",fontSize:13,whiteSpace:"nowrap"}}>Manage staff</button>
         </div>
-        {["admin","dispenser","locum"].map(role=><div key={role} style={{marginBottom:20}}>
+        {["admin","dispenser","locum"].map(role=><div key={role} style={{marginBottom:18}}>
           <div className="section-title">{RL[role]}</div>
           {staffList.filter(s=>s.role===role).map(s=><div key={s.id} className="staff-row">
-            <div className="avatar" style={{background:role==="admin"?"var(--navy)":role==="dispenser"?"var(--blue-bg)":"var(--amber-bg)",color:role==="admin"?"var(--gold-light)":role==="dispenser"?"var(--blue)":"var(--amber)",width:38,height:38,fontSize:12,fontWeight:600}}>
-              {s.name.split(" ").map(n=>n[0]).join("").slice(0,2).toUpperCase()}
-            </div>
-            <div style={{flex:1}}><div style={{fontWeight:600,fontSize:14,color:"var(--navy)"}}>{s.name}</div><div style={{fontSize:12,color:"var(--text-3)"}}>{s.title}</div></div>
+            <div className="avatar" style={{width:38,height:38,fontSize:13}}>{s.name.split(" ").map(n=>n[0]).join("").slice(0,2).toUpperCase()}</div>
+            <div style={{flex:1}}><div style={{fontWeight:600,fontSize:14,color:"var(--text-1)"}}>{s.name}</div><div style={{fontSize:12,color:"var(--text-3)"}}>{s.title}</div></div>
             <PinDisplay role={role} pin={s.role==="locum"?dailyPin(s.id):s.pin}/>
           </div>)}
         </div>)}
@@ -889,192 +997,56 @@ function App(){
 function PinDisplay({role,pin}){
   const[show,setShow]=useState(false);
   return<div style={{display:"flex",alignItems:"center",gap:8}}>
-    <div style={{textAlign:"right"}}><div style={{fontSize:11,color:"var(--color-text-tertiary)"}}>{role==="locum"?"Today's PIN":"PIN"}</div><div style={{fontFamily:"var(--font-mono)",fontSize:15,fontWeight:500,letterSpacing:"0.1em",color:show?"var(--color-text-primary)":"var(--color-text-tertiary)"}}>{show?pin:"• • • • •"}</div></div>
-    <button onClick={()=>setShow(s=>!s)} style={{padding:"6px 8px",borderRadius:8,border:"1px solid var(--color-border-secondary)",background:"var(--color-background-primary)",color:"var(--color-text-secondary)",cursor:"pointer",fontSize:14}}><i className={"ti ti-eye"+(show?"-off":"")}/></button>
-    {role==="locum"&&show&&<span style={{fontSize:11,padding:"2px 8px",borderRadius:20,background:"var(--color-background-warning)",color:"var(--color-text-warning)",border:"1px solid var(--color-border-warning)"}}>Expires midnight</span>}
+    <div style={{textAlign:"right"}}><div style={{fontSize:10,color:"var(--gold)",fontWeight:600,textTransform:"uppercase",letterSpacing:"0.5px",opacity:0.7}}>{role==="locum"?"Today's PIN":"PIN"}</div><div style={{fontFamily:"var(--font-mono)",fontSize:15,fontWeight:600,letterSpacing:"0.15em",color:show?"var(--gold-light)":"var(--text-3)"}}>{show?pin:"• • • • •"}</div></div>
+    <button onClick={()=>setShow(s=>!s)} className="icon-btn" style={{border:"1px solid var(--border)"}}><i className={"ti ti-eye"+(show?"-off":"")}/></button>
+    {role==="locum"&&show&&<span style={{fontSize:10,padding:"2px 8px",borderRadius:20,background:"var(--amber-bg)",color:"var(--amber)",border:"1px solid var(--amber-border)",fontWeight:600}}>Expires midnight</span>}
   </div>;
 }
 
-// ── EditPatientModal ──
-function EditPatientModal({pt,onSave,onClose}){
-  const[form,setForm]=useState({...pt});
-  const[saving,setSaving]=useState(false);
-  async function save(){setSaving(true);try{await onSave(pt.id,form);}catch(e){alert("Save failed: "+e.message);}setSaving(false);}
-  const F=(label,key,type="text",ph="",maxLen=null)=>(
-    <div style={{marginBottom:10}}>
-      <label className="form-label">{label}</label>
-      <input className="form-input" type={type} value={form[key]||""} placeholder={ph} maxLength={maxLen||undefined} onChange={e=>setForm(f=>({...f,[key]:e.target.value}))}/>
-    </div>
-  );
-  const R2=(a,b)=><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>{a}{b}</div>;
-  const S=t=><div className="section-title" style={{marginTop:14}}>{t}</div>;
-  return(
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-box" onClick={e=>e.stopPropagation()}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-          <div><div style={{fontSize:15,fontWeight:600,color:"var(--navy)"}}>Edit patient profile</div><div style={{fontSize:12,color:"var(--text-3)"}}>{pt.id}</div></div>
-          <button onClick={onClose} style={{background:"none",border:"none",fontSize:20,cursor:"pointer",color:"var(--text-3)"}}><i className="ti ti-x"/></button>
-        </div>
-        {S("Identity")}
-        {R2(F("First name","first_name","text","",),F("Surname","surname"))}
-        <div style={{marginBottom:10}}>
-          <label className="form-label">SA ID number</label>
-          <input className="form-input" type="text" value={form.id_number||""} maxLength={13}
-            onChange={e=>{const v=e.target.value.replace(/\D/g,"").slice(0,13);const dob=v.length>=6?parseSaId(v):null;setForm(f=>({...f,id_number:v,...(dob?{dob}:{})}));}}/>
-        </div>
-        {F("Date of birth","dob","date")}
-        {S("Contact")}
-        <div style={{marginBottom:10}}>
-          <label className="form-label">Phone</label>
-          <input className="form-input" type="tel" value={form.phone||""} onBlur={e=>setForm(f=>({...f,phone:fmtPhone(e.target.value)}))} onChange={e=>setForm(f=>({...f,phone:e.target.value}))}/>
-        </div>
-        {F("Email","email","email")}
-        {S("Address")}
-        {F("Line 1","address_line1","text","Street number and name")}
-        {F("Line 2","address_line2","text","Suburb / complex")}
-        {F("Line 3","address_line3","text","City / town")}
-        {R2(F("Province","address_province"),F("Postal code","address_postal"))}
-        {S("Medical aid")}
-        {R2(F("Aid name","aid_name"),F("Aid number","aid_number"))}
-        {F("Dependant code","dependant_code","text","00 = main")}
-        {S("System reference")}
-        {F("Dispensing profile no.","disp_profile_no")}
-        {S("Emergency contact")}
-        {R2(F("Next of kin","nok_name"),F("NOK phone","nok_phone","tel"))}
-        <div className="divider"/>
-        <div style={{display:"flex",gap:10}}>
-          <button onClick={onClose} className="btn-ghost" style={{flex:1}}>Cancel</button>
-          <button onClick={save} disabled={saving} className="btn-primary" style={{flex:2,textAlign:"center"}}>{saving?"Saving…":"Save changes"}</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── StaffManagerModal ──
-function StaffManagerModal({staffList,setStaffList,currentUser,onClose}){
-  const[newStaff,setNewStaff]=useState({name:"",title:"",role:"dispenser",pin:""});
-  const[editingPin,setEditingPin]=useState(null);
-  const[newPin,setNewPin]=useState("");
-
-  function addStaff(){
-    if(!newStaff.name.trim()||!newStaff.pin.trim())return alert("Name and PIN required");
-    if(newStaff.pin.length!==5||isNaN(newStaff.pin))return alert("PIN must be exactly 5 digits");
-    const id="S"+String(Date.now()).slice(-4);
-    setStaffList(l=>[...l,{...newStaff,id}]);
-    setNewStaff({name:"",title:"",role:"dispenser",pin:""});
-  }
-  function removeStaff(id){
-    if(id===currentUser.id)return alert("You cannot remove yourself.");
-    if(!window.confirm("Remove this staff member?"))return;
-    setStaffList(l=>l.filter(s=>s.id!==id));
-  }
-  function savePin(id){
-    if(newPin.length!==5||isNaN(newPin))return alert("PIN must be exactly 5 digits");
-    setStaffList(l=>l.map(s=>s.id===id?{...s,pin:newPin}:s));
-    setEditingPin(null);setNewPin("");
-  }
-
-  const inp2={...{width:"100%",padding:"8px 10px",fontSize:13,border:"1px solid var(--border-2)",borderRadius:"var(--radius-sm)",background:"#fff",color:"var(--text-1)",fontFamily:"'Inter',system-ui,sans-serif",outline:"none",boxSizing:"border-box"}};
-
-  return(
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-box" style={{maxWidth:580}} onClick={e=>e.stopPropagation()}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-          <div style={{fontSize:15,fontWeight:600,color:"var(--navy)"}}>Manage staff</div>
-          <button onClick={onClose} style={{background:"none",border:"none",fontSize:20,cursor:"pointer",color:"var(--text-3)"}}><i className="ti ti-x"/></button>
-        </div>
-
-        {["admin","dispenser","locum"].map(role=>(
-          <div key={role} style={{marginBottom:16}}>
-            <div className="section-title">{RL[role]}</div>
-            {staffList.filter(s=>s.role===role).map(s=>(
-              <div key={s.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:"var(--surface-2)",border:"1px solid var(--border)",borderRadius:"var(--radius-sm)",marginBottom:6}}>
-                <div style={{flex:1}}>
-                  <div style={{fontWeight:600,fontSize:13,color:"var(--navy)"}}>{s.name}</div>
-                  <div style={{fontSize:11,color:"var(--text-3)"}}>{s.title||"—"}</div>
-                </div>
-                {editingPin===s.id?(
-                  <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                    <input style={{...inp2,width:90,letterSpacing:"0.2em"}} type="text" maxLength={5} placeholder="New PIN" value={newPin} onChange={e=>setNewPin(e.target.value.replace(/\D/g,"").slice(0,5))}/>
-                    <button onClick={()=>savePin(s.id)} className="btn-primary" style={{padding:"6px 12px",fontSize:12}}>Save</button>
-                    <button onClick={()=>{setEditingPin(null);setNewPin("");}} className="btn-ghost" style={{padding:"6px 10px",fontSize:12}}>✕</button>
-                  </div>
-                ):(
-                  <div style={{display:"flex",gap:6}}>
-                    <button onClick={()=>{setEditingPin(s.id);setNewPin("");}} className="btn-ghost" style={{fontSize:12,padding:"5px 10px"}}>Change PIN</button>
-                    {s.id!==currentUser.id&&<button onClick={()=>removeStaff(s.id)} className="btn-danger" style={{padding:"5px 10px"}}>Remove</button>}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        ))}
-
-        <div className="divider"/>
-        <div style={{fontSize:13,fontWeight:600,color:"var(--navy)",marginBottom:10}}>Add new staff member</div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
-          <div><label className="form-label">Full name *</label><input style={inp2} value={newStaff.name} onChange={e=>setNewStaff(f=>({...f,name:e.target.value}))} placeholder="e.g. Thabo Nkosi"/></div>
-          <div><label className="form-label">Job title</label><input style={inp2} value={newStaff.title} onChange={e=>setNewStaff(f=>({...f,title:e.target.value}))} placeholder="e.g. Pharmacist"/></div>
-          <div><label className="form-label">Role *</label>
-            <select style={{...inp2,appearance:"none"}} value={newStaff.role} onChange={e=>setNewStaff(f=>({...f,role:e.target.value}))}>
-              <option value="admin">Admin</option>
-              <option value="dispenser">Dispenser</option>
-              <option value="locum">Locum</option>
-            </select>
-          </div>
-          <div><label className="form-label">PIN (5 digits) *</label><input style={{...inp2,letterSpacing:"0.2em"}} type="text" maxLength={5} value={newStaff.pin} onChange={e=>setNewStaff(f=>({...f,pin:e.target.value.replace(/\D/g,"").slice(0,5)}))} placeholder="e.g. 84721"/></div>
-        </div>
-        <button onClick={addStaff} className="btn-primary" style={{width:"100%",textAlign:"center"}}><i className="ti ti-user-plus" style={{marginRight:6}}/>Add staff member</button>
-      </div>
-    </div>
-  );
-}
-
-function LoginScreen({onLogin}){
+function LoginScreen({onLogin,staffList}){
   const[selStaff,setSelStaff]=useState(null);
   const[pin,setPin]=useState("");
   const[err,setErr]=useState("");
+  const staff=staffList||INITIAL_STAFF;
   const today=new Date().toLocaleDateString("en-ZA",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
   function pressKey(k){
     if(k==="del"){setPin(p=>p.slice(0,-1));setErr("");}
     else if(pin.length<5){const next=pin+k;setPin(next);if(next.length===5){setTimeout(()=>{if(getPin(selStaff)===next)onLogin(selStaff);else{setErr("Incorrect PIN. Try again.");setPin("");}},120);}}
   }
-  return<div style={{minHeight:"100vh",background:"var(--navy)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"24px 20px",fontFamily:"'Inter',system-ui,sans-serif"}}>
+  return<div style={{minHeight:"100vh",background:"var(--navy)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"24px 20px",fontFamily:"var(--font-sans)"}}>
     <div style={{width:"100%",maxWidth:400}}>
       <div style={{textAlign:"center",marginBottom:32}}>
-        <div style={{width:60,height:60,borderRadius:18,background:"linear-gradient(135deg,#c9a84c,#e8c97a)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 16px",boxShadow:"0 4px 20px rgba(201,168,76,0.3)"}}><i className="ti ti-pill" style={{fontSize:28,color:"var(--navy)"}}/></div>
-        <div style={{fontSize:24,fontWeight:600,color:"#fff",letterSpacing:"-0.5px"}}>PharmaSave</div>
-        <div style={{fontSize:12,color:"rgba(255,255,255,0.35)",marginTop:4,letterSpacing:"1px",textTransform:"uppercase"}}>Prescription Manager</div>
-        <div style={{fontSize:12,color:"rgba(255,255,255,0.4)",marginTop:10}}>{today}</div>
+        <div style={{width:64,height:64,borderRadius:20,background:"linear-gradient(135deg,var(--gold),var(--gold-light))",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 16px",boxShadow:"0 4px 24px rgba(201,168,76,0.4)"}}><i className="ti ti-pill" style={{fontSize:30,color:"var(--navy)"}}/></div>
+        <div style={{fontSize:26,fontWeight:700,color:"#fff",letterSpacing:"-0.5px"}}>PharmaSave</div>
+        <div style={{fontSize:11,color:"var(--gold)",marginTop:4,letterSpacing:"2px",textTransform:"uppercase",opacity:0.8}}>Prescription Manager</div>
+        <div style={{fontSize:12,color:"var(--text-3)",marginTop:10}}>{today}</div>
       </div>
-
       {!selStaff?<>
-        <div style={{fontSize:12,color:"rgba(255,255,255,0.45)",marginBottom:14,textAlign:"center",textTransform:"uppercase",letterSpacing:"0.8px"}}>Select your name to sign in</div>
-        {["admin","dispenser","locum"].map(role=><div key={role} style={{marginBottom:16}}>
-          <div style={{fontSize:10,fontWeight:600,color:"rgba(255,255,255,0.3)",textTransform:"uppercase",letterSpacing:"1px",marginBottom:8}}>{RL[role]}</div>
-          {STAFF.filter(s=>s.role===role).map(s=><button key={s.id} onClick={()=>{setSelStaff(s);setPin("");setErr("");}} style={{display:"flex",alignItems:"center",gap:12,width:"100%",padding:"12px 16px",border:"1px solid rgba(255,255,255,0.1)",borderRadius:12,marginBottom:6,cursor:"pointer",background:"rgba(255,255,255,0.05)",textAlign:"left",transition:"all 0.15s",fontFamily:"'Inter',system-ui,sans-serif"}}>
-            <div style={{width:36,height:36,borderRadius:"50%",background:role==="admin"?"var(--gold)":"rgba(255,255,255,0.1)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:12,fontWeight:600,color:role==="admin"?"var(--navy)":"rgba(255,255,255,0.7)"}}>
+        <div style={{fontSize:11,color:"var(--text-3)",marginBottom:14,textAlign:"center",textTransform:"uppercase",letterSpacing:"1px"}}>Select your name</div>
+        {["admin","dispenser","locum"].map(role=><div key={role} style={{marginBottom:14}}>
+          <div style={{fontSize:10,fontWeight:700,color:"var(--gold)",textTransform:"uppercase",letterSpacing:"1px",marginBottom:8,opacity:0.7}}>{RL[role]}</div>
+          {staff.filter(s=>s.role===role).map(s=><button key={s.id} onClick={()=>{setSelStaff(s);setPin("");setErr("");}} style={{display:"flex",alignItems:"center",gap:12,width:"100%",padding:"12px 16px",border:"1px solid rgba(201,168,76,0.15)",borderRadius:12,marginBottom:6,cursor:"pointer",background:"rgba(255,255,255,0.04)",textAlign:"left",fontFamily:"var(--font-sans)",transition:"all 0.15s"}}>
+            <div style={{width:38,height:38,borderRadius:"50%",background:role==="admin"?"linear-gradient(135deg,var(--gold),var(--gold-light))":"rgba(255,255,255,0.08)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:13,fontWeight:700,color:role==="admin"?"var(--navy)":"rgba(255,255,255,0.6)"}}>
               {s.name.split(" ").map(n=>n[0]).join("").slice(0,2).toUpperCase()}
             </div>
-            <div><div style={{fontSize:14,fontWeight:500,color:"#fff"}}>{s.name}</div><div style={{fontSize:12,color:"rgba(255,255,255,0.4)"}}>{s.title}</div></div>
+            <div><div style={{fontSize:14,fontWeight:500,color:"#fff"}}>{s.name}</div><div style={{fontSize:12,color:"var(--text-3)"}}>{s.title}</div></div>
           </button>)}
         </div>)}
       </>:<>
-        <button onClick={()=>{setSelStaff(null);setPin("");setErr("");}} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",color:"var(--gold-light)",cursor:"pointer",fontSize:13,padding:0,marginBottom:24,fontFamily:"'Inter',system-ui,sans-serif"}}><i className="ti ti-arrow-left"/> Back</button>
+        <button onClick={()=>{setSelStaff(null);setPin("");setErr("");}} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",color:"var(--gold-light)",cursor:"pointer",fontSize:13,padding:0,marginBottom:24,fontFamily:"var(--font-sans)"}}><i className="ti ti-arrow-left"/> Back</button>
         <div style={{textAlign:"center",marginBottom:28}}>
-          <div style={{width:56,height:56,borderRadius:"50%",background:selStaff.role==="admin"?"var(--gold)":"rgba(255,255,255,0.1)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 12px",fontSize:18,fontWeight:600,color:selStaff.role==="admin"?"var(--navy)":"rgba(255,255,255,0.8)"}}>
+          <div style={{width:60,height:60,borderRadius:"50%",background:selStaff.role==="admin"?"linear-gradient(135deg,var(--gold),var(--gold-light))":"rgba(255,255,255,0.08)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 12px",fontSize:20,fontWeight:700,color:selStaff.role==="admin"?"var(--navy)":"rgba(255,255,255,0.8)"}}>
             {selStaff.name.split(" ").map(n=>n[0]).join("").slice(0,2).toUpperCase()}
           </div>
-          <div style={{fontSize:17,fontWeight:600,color:"#fff"}}>{selStaff.name}</div>
-          <div style={{fontSize:12,color:"rgba(255,255,255,0.4)",marginTop:4}}>{selStaff.title}</div>
+          <div style={{fontSize:18,fontWeight:600,color:"#fff"}}>{selStaff.name}</div>
+          <div style={{fontSize:12,color:"var(--text-3)",marginTop:4}}>{selStaff.title}</div>
         </div>
-        <div style={{display:"flex",justifyContent:"center",gap:12,marginBottom:10}}>
-          {[0,1,2,3,4].map(i=><div key={i} style={{width:14,height:14,borderRadius:"50%",background:pin.length>i?"var(--gold)":"rgba(255,255,255,0.15)",transition:"background 0.15s",boxShadow:pin.length>i?"0 0 8px rgba(201,168,76,0.5)":""}}/>)}
+        <div style={{display:"flex",justifyContent:"center",gap:14,marginBottom:8}}>
+          {[0,1,2,3,4].map(i=><div key={i} style={{width:14,height:14,borderRadius:"50%",background:pin.length>i?"var(--gold)":"rgba(255,255,255,0.12)",transition:"all 0.15s",boxShadow:pin.length>i?"0 0 10px rgba(201,168,76,0.6)":""}}/>)}
         </div>
-        {err&&<div style={{textAlign:"center",fontSize:13,color:"#fc8181",marginBottom:12}}>{err}</div>}
-        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,maxWidth:260,margin:"12px auto 0"}}>
-          {["1","2","3","4","5","6","7","8","9","","0","del"].map(k=>k===""?<div key="empty"/>:<button key={k} onClick={()=>pressKey(k)} style={{padding:"16px 0",fontSize:k==="del"?18:20,fontWeight:500,borderRadius:12,border:"1px solid rgba(255,255,255,0.12)",background:"rgba(255,255,255,0.07)",color:"#fff",cursor:"pointer",fontFamily:"'Inter',system-ui,sans-serif",transition:"all 0.1s"}}>{k==="del"?<i className="ti ti-backspace" style={{fontSize:20}}/>:k}</button>)}
+        {err&&<div style={{textAlign:"center",fontSize:13,color:"var(--red)",marginBottom:12}}>{err}</div>}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,maxWidth:270,margin:"14px auto 0"}}>
+          {["1","2","3","4","5","6","7","8","9","","0","del"].map(k=>k===""?<div key="empty"/>:<button key={k} onClick={()=>pressKey(k)} style={{padding:"17px 0",fontSize:k==="del"?18:21,fontWeight:500,borderRadius:12,border:"1px solid rgba(201,168,76,0.15)",background:"rgba(255,255,255,0.05)",color:"#fff",cursor:"pointer",fontFamily:"var(--font-sans)",transition:"all 0.1s"}}>{k==="del"?<i className="ti ti-backspace" style={{fontSize:20}}/>:k}</button>)}
         </div>
       </>}
     </div>
