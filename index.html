@@ -670,12 +670,16 @@ function App(){
   const[newPt,setNewPt]=useState({disp_profile_no:"",first_name:"",surname:"",dob:"",id_number:"",phone:"",email:"",address_line1:"",address_line2:"",address_line3:"",address_province:"",address_postal:"",aid_name:"",aid_number:"",dependant_code:"",nok_name:"",nok_phone:""});
   const[toast,setToast]=useState(null);
   const[editRx,setEditRx]=useState(null);
+  const[editPt,setEditPt]=useState(null);
   const[showUploadInProfile,setShowUploadInProfile]=useState(false);
+  const[showStaffMgr,setShowStaffMgr]=useState(false);
+  const[staffList,setStaffList]=useState(STAFF.map(s=>({...s,pin:getPin(s)})));
   // Scanner state lives here and is passed down
-  const[scannerOpen,setScannerOpen]=useState(false);
   const[pendingScan,setPendingScan]=useState(null);
   const[rawImg,setRawImg]=useState(null);
   const fileRef=useRef();
+
+  useEffect(()=>{if(currentUser)loadPatients();},[currentUser]);
 
   // Keep session alive — reset timer on any user interaction, timeout after 8 hours
   useEffect(()=>{
