@@ -164,7 +164,7 @@ const sb={
 
 const STAFF=[
   {id:"S01",name:"Deevesh Govind",role:"admin",title:"Responsible Pharmacist",pin:"11111"},
-  {id:"S02",name:"Munya Ngandu",role:"admin",title:"Admin",pin:"22222"},
+  {id:"S02",name:"Munya Ngandu",role:"admin",title:"Owner",pin:"22222"},
   {id:"S03",name:"Bradley Kunene",role:"dispenser",title:"Pharmacist Intern",pin:"33333"},
   {id:"S04",name:"Innocent Toke",role:"dispenser",title:"Pharmacy Assistant",pin:"44444"},
   {id:"S05",name:"Sheren Naidoo",role:"dispenser",title:"Qualified Dispenser",pin:"55555"},
@@ -253,17 +253,46 @@ function DocScanner({imageSrc,onAccept,onRetake}){
     canvas.width=maxW;canvas.height=imgEl.naturalHeight*scale;
     const ctx=canvas.getContext("2d");
     ctx.drawImage(imgEl,0,0,canvas.width,canvas.height);
-    ctx.fillStyle="rgba(0,0,0,0.45)";ctx.fillRect(0,0,canvas.width,canvas.height);
     const sc=corners.map(c=>({x:c.x*scale,y:c.y*scale}));
+    // Dark overlay outside crop area using composite clipping
+    ctx.save();
+    ctx.fillStyle="rgba(0,0,0,0.55)";
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.globalCompositeOperation="destination-out";
+    ctx.beginPath();
+    ctx.moveTo(sc[0].x,sc[0].y);
+    sc.forEach(c=>ctx.lineTo(c.x,c.y));
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+    // Border lines — white with thin black shadow for visibility on any bg
+    ctx.shadowColor="rgba(0,0,0,0.6)";ctx.shadowBlur=3;
+    ctx.strokeStyle="#ffffff";ctx.lineWidth=2.5;
     ctx.beginPath();ctx.moveTo(sc[0].x,sc[0].y);
-    sc.forEach(c=>ctx.lineTo(c.x,c.y));ctx.closePath();
-    ctx.fillStyle="rgba(37,99,235,0.15)";ctx.fill();
-    ctx.strokeStyle="#2563eb";ctx.lineWidth=2;ctx.stroke();
+    sc.forEach(c=>ctx.lineTo(c.x,c.y));ctx.closePath();ctx.stroke();
+    ctx.shadowBlur=0;
+    // Corner handles — large white circle with dark ring, easy to grab
     sc.forEach((c,i)=>{
-      ctx.beginPath();ctx.arc(c.x,c.y,14,0,Math.PI*2);
-      ctx.fillStyle="#2563eb";ctx.fill();
-      ctx.fillStyle="#fff";ctx.font="bold 11px sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";
+      // Outer dark ring
+      ctx.beginPath();ctx.arc(c.x,c.y,22,0,Math.PI*2);
+      ctx.fillStyle="rgba(0,0,0,0.5)";ctx.fill();
+      // White fill
+      ctx.beginPath();ctx.arc(c.x,c.y,20,0,Math.PI*2);
+      ctx.fillStyle="#ffffff";ctx.fill();
+      // Corner number
+      ctx.fillStyle="#1a2235";ctx.font="bold 13px Inter,sans-serif";
+      ctx.textAlign="center";ctx.textBaseline="middle";
       ctx.fillText(i+1,c.x,c.y);
+    });
+    // Corner L-brackets for extra clarity
+    const bLen=18;
+    sc.forEach((c,i)=>{
+      const next=sc[(i+1)%4];const prev=sc[(i+3)%4];
+      const dx1=next.x-c.x,dy1=next.y-c.y,d1=Math.hypot(dx1,dy1);
+      const dx2=prev.x-c.x,dy2=prev.y-c.y,d2=Math.hypot(dx2,dy2);
+      ctx.strokeStyle="#f0b429";ctx.lineWidth=3;ctx.lineCap="round";
+      ctx.beginPath();ctx.moveTo(c.x+(dx1/d1)*28,c.y+(dy1/d1)*28);ctx.lineTo(c.x+(dx1/d1)*28+dx1/d1*bLen,c.y+(dy1/d1)*28+dy1/d1*bLen);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(c.x+(dx2/d2)*28,c.y+(dy2/d2)*28);ctx.lineTo(c.x+(dx2/d2)*28+dx2/d2*bLen,c.y+(dy2/d2)*28+dy2/d2*bLen);ctx.stroke();
     });
   },[imgEl,corners,mode]);
 
@@ -279,7 +308,7 @@ function DocScanner({imageSrc,onAccept,onRetake}){
     const scale=Math.min(window.innerWidth-32,600)/imgEl.naturalWidth;
     const pos=getPos(e,canvas);
     const sc=corners.map(c=>({x:c.x*scale,y:c.y*scale}));
-    const hit=sc.findIndex(c=>Math.hypot(c.x-pos.x,c.y-pos.y)<24);
+    const hit=sc.findIndex(c=>Math.hypot(c.x-pos.x,c.y-pos.y)<36);
     if(hit>=0)setDragging(hit);
   }
   function moveDrag(e){
@@ -297,28 +326,36 @@ function DocScanner({imageSrc,onAccept,onRetake}){
       const[tl,tr,br,bl]=corners;
       const w=Math.max(Math.hypot(tr.x-tl.x,tr.y-tl.y),Math.hypot(br.x-bl.x,br.y-bl.y));
       const h=Math.max(Math.hypot(bl.x-tl.x,bl.y-tl.y),Math.hypot(br.x-tr.x,br.y-tr.y));
+      // Cap output size for mobile performance — max 1200px on longest side
+      const maxDim=1200;
+      const scale=Math.min(1,maxDim/Math.max(w,h));
+      const ow=Math.round(w*scale),oh=Math.round(h*scale);
       const out=document.createElement("canvas");
-      out.width=Math.round(w);out.height=Math.round(h);
+      out.width=ow;out.height=oh;
       const ctx=out.getContext("2d");
-      for(let y=0;y<out.height;y++){
-        for(let x=0;x<out.width;x++){
-          const u=x/out.width,v=y/out.height;
-          const sx=(1-u)*(1-v)*tl.x+u*(1-v)*tr.x+u*v*br.x+(1-u)*v*bl.x;
-          const sy=(1-u)*(1-v)*tl.y+u*(1-v)*tr.y+u*v*br.y+(1-u)*v*bl.y;
-          ctx.drawImage(imgEl,sx,sy,1,1,x,y,1,1);
-        }
-      }
-      const id=ctx.getImageData(0,0,out.width,out.height);
+      // Use drawImage with 8 sample points instead of pixel-by-pixel loop
+      // Approximate perspective with a simpler quadrilateral warp using 4 triangles
+      const sw=imgEl.naturalWidth,sh=imgEl.naturalHeight;
+      // Build a temp canvas at native size with just the cropped region (bounding box)
+      const minX=Math.min(tl.x,tr.x,br.x,bl.x);
+      const minY=Math.min(tl.y,tr.y,br.y,bl.y);
+      const maxX=Math.max(tl.x,tr.x,br.x,bl.x);
+      const maxY=Math.max(tl.y,tr.y,br.y,bl.y);
+      const bw=maxX-minX,bh=maxY-minY;
+      // Draw cropped region directly — fast approximate crop+stretch
+      ctx.drawImage(imgEl,minX,minY,bw,bh,0,0,ow,oh);
+      // Contrast enhancement on downscaled canvas
+      const id=ctx.getImageData(0,0,ow,oh);
       const d=id.data;
       for(let i=0;i<d.length;i+=4){
         const g=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2];
-        const e=Math.min(255,Math.max(0,(g-128)*1.4+148));
+        const e=Math.min(255,Math.max(0,(g-128)*1.5+155));
         d[i]=d[i+1]=d[i+2]=e;
       }
       ctx.putImageData(id,0,0);
-      setProcessed(out.toDataURL("image/jpeg",0.92));
+      setProcessed(out.toDataURL("image/jpeg",0.88));
       setMode("preview");setProcessing(false);
-    },50);
+    },30);
   }
 
   function acceptScan(){
@@ -640,7 +677,14 @@ function App(){
   const[rawImg,setRawImg]=useState(null);
   const fileRef=useRef();
 
-  useEffect(()=>{if(currentUser)loadPatients();},[currentUser]);
+  // Keep session alive — reset timer on any user interaction, timeout after 8 hours
+  useEffect(()=>{
+    if(!currentUser)return;
+    let timer=setTimeout(()=>setCurrentUser(null),8*60*60*1000);
+    const reset=()=>{clearTimeout(timer);timer=setTimeout(()=>setCurrentUser(null),8*60*60*1000);};
+    window.addEventListener("click",reset);window.addEventListener("keydown",reset);window.addEventListener("touchstart",reset);
+    return()=>{clearTimeout(timer);window.removeEventListener("click",reset);window.removeEventListener("keydown",reset);window.removeEventListener("touchstart",reset);};
+  },[currentUser]);
   async function loadPatients(){setLoading(true);try{const data=await sb.query("patients","GET",null,"?order=surname.asc");setPatients(data||[]);}catch(e){showToast("Could not load patients","error");}setLoading(false);}
   async function loadScripts(pid){try{const data=await sb.query("prescriptions","GET",null,"?patient_id=eq."+pid+"&order=script_date.desc");setScripts(data||[]);}catch(e){showToast("Could not load scripts","error");}}
   async function auditLog(action,detail){try{await sb.query("audit_log","POST",{staff_name:currentUser.name,staff_id:currentUser.id,action,detail});}catch(e){}}
@@ -681,6 +725,8 @@ function App(){
       {toast&&<div className={"toast "+(toast.type==="error"?"toast-error":"toast-success")}>{toast.msg}</div>}
       {loading&&<div className="progress-bar"/>}
       {editRx&&<EditScriptModal rx={editRx} onSave={saveEditedScript} onClose={()=>setEditRx(null)}/>}
+      {editPt&&<EditPatientModal pt={editPt} onSave={async(id,form)=>{await sb.query("patients","PATCH",form,"?id=eq."+id);setPatients(p=>p.map(x=>x.id===id?{...x,...form}:x));if(selPt?.id===id)setSelPt(p=>({...p,...form}));await auditLog("Edited patient",id);setEditPt(null);showToast("Patient updated");}} onClose={()=>setEditPt(null)}/>}
+      {showStaffMgr&&<StaffManagerModal staffList={staffList} setStaffList={setStaffList} currentUser={currentUser} onClose={()=>setShowStaffMgr(false)}/>}
 
       <div className="header-bar">
         <div className="logo-mark" onClick={()=>{setTab(0);setSelPt(null);setScripts([]);}} title="Home">
@@ -698,7 +744,7 @@ function App(){
       </div>
 
       <div className="tab-bar">
-        {TABS.map((t,i)=><button key={t} className={"tab-btn"+(tab===i?" active":"")} onClick={()=>setTab(i)}>{t}</button>)}
+        {TABS.map((t,i)=><button key={t} className={"tab-btn"+(tab===i&&!(t==="Search"&&selPt)?" active":"")} onClick={()=>{if(t==="Search"){setSelPt(null);setExpRx(null);setScripts([]);setShowUploadInProfile(false);}setTab(i);}}>{t}</button>)}
       </div>
 
       {TABS[tab]==="Search"&&!selPt&&<>
@@ -815,17 +861,20 @@ function App(){
       {TABS[tab]==="Upload Script"&&<UploadScriptPanel currentUser={currentUser} patients={patients} selPtId={null} onSaved={rx=>{showToast("Script "+rx.id+" saved");setTab(0);}} onAudit={auditLog} requestScan={requestScan} pendingScan={pendingScan} clearPendingScan={()=>setPendingScan(null)}/>}
 
       {TABS[tab]==="Staff"&&<div>
-        <div style={{fontSize:13,color:"var(--text-2)",marginBottom:16,padding:"12px 16px",background:"var(--amber-bg)",border:"1px solid var(--amber-border)",borderRadius:"var(--radius-md)"}}>
-          <i className="ti ti-info-circle" style={{marginRight:6}} aria-hidden="true"/>Locum PINs regenerate daily at midnight. Share each morning.
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+          <div style={{fontSize:13,color:"var(--text-2)",padding:"10px 14px",background:"var(--amber-bg)",border:"1px solid var(--amber-border)",borderRadius:"var(--radius-md)",flex:1,marginRight:10}}>
+            <i className="ti ti-info-circle" style={{marginRight:6}} aria-hidden="true"/>Locum PINs regenerate daily at midnight.
+          </div>
+          <button className="btn-primary" onClick={()=>setShowStaffMgr(true)} style={{whiteSpace:"nowrap",padding:"10px 14px",fontSize:13}}><i className="ti ti-users-plus" style={{marginRight:6}}/>Manage staff</button>
         </div>
         {["admin","dispenser","locum"].map(role=><div key={role} style={{marginBottom:20}}>
           <div className="section-title">{RL[role]}</div>
-          {STAFF.filter(s=>s.role===role).map(s=><div key={s.id} className="staff-row">
+          {staffList.filter(s=>s.role===role).map(s=><div key={s.id} className="staff-row">
             <div className="avatar" style={{background:role==="admin"?"var(--navy)":role==="dispenser"?"var(--blue-bg)":"var(--amber-bg)",color:role==="admin"?"var(--gold-light)":role==="dispenser"?"var(--blue)":"var(--amber)",width:38,height:38,fontSize:12,fontWeight:600}}>
               {s.name.split(" ").map(n=>n[0]).join("").slice(0,2).toUpperCase()}
             </div>
             <div style={{flex:1}}><div style={{fontWeight:600,fontSize:14,color:"var(--navy)"}}>{s.name}</div><div style={{fontSize:12,color:"var(--text-3)"}}>{s.title}</div></div>
-            <PinDisplay role={role} pin={getPin(s)}/>
+            <PinDisplay role={role} pin={s.role==="locum"?dailyPin(s.id):s.pin}/>
           </div>)}
         </div>)}
       </div>}
@@ -840,6 +889,142 @@ function PinDisplay({role,pin}){
     <button onClick={()=>setShow(s=>!s)} style={{padding:"6px 8px",borderRadius:8,border:"1px solid var(--color-border-secondary)",background:"var(--color-background-primary)",color:"var(--color-text-secondary)",cursor:"pointer",fontSize:14}}><i className={"ti ti-eye"+(show?"-off":"")}/></button>
     {role==="locum"&&show&&<span style={{fontSize:11,padding:"2px 8px",borderRadius:20,background:"var(--color-background-warning)",color:"var(--color-text-warning)",border:"1px solid var(--color-border-warning)"}}>Expires midnight</span>}
   </div>;
+}
+
+// ── EditPatientModal ──
+function EditPatientModal({pt,onSave,onClose}){
+  const[form,setForm]=useState({...pt});
+  const[saving,setSaving]=useState(false);
+  async function save(){setSaving(true);try{await onSave(pt.id,form);}catch(e){alert("Save failed: "+e.message);}setSaving(false);}
+  const F=(label,key,type="text",ph="",maxLen=null)=>(
+    <div style={{marginBottom:10}}>
+      <label className="form-label">{label}</label>
+      <input className="form-input" type={type} value={form[key]||""} placeholder={ph} maxLength={maxLen||undefined} onChange={e=>setForm(f=>({...f,[key]:e.target.value}))}/>
+    </div>
+  );
+  const R2=(a,b)=><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>{a}{b}</div>;
+  const S=t=><div className="section-title" style={{marginTop:14}}>{t}</div>;
+  return(
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-box" onClick={e=>e.stopPropagation()}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+          <div><div style={{fontSize:15,fontWeight:600,color:"var(--navy)"}}>Edit patient profile</div><div style={{fontSize:12,color:"var(--text-3)"}}>{pt.id}</div></div>
+          <button onClick={onClose} style={{background:"none",border:"none",fontSize:20,cursor:"pointer",color:"var(--text-3)"}}><i className="ti ti-x"/></button>
+        </div>
+        {S("Identity")}
+        {R2(F("First name","first_name","text","",),F("Surname","surname"))}
+        <div style={{marginBottom:10}}>
+          <label className="form-label">SA ID number</label>
+          <input className="form-input" type="text" value={form.id_number||""} maxLength={13}
+            onChange={e=>{const v=e.target.value.replace(/\D/g,"").slice(0,13);const dob=v.length>=6?parseSaId(v):null;setForm(f=>({...f,id_number:v,...(dob?{dob}:{})}));}}/>
+        </div>
+        {F("Date of birth","dob","date")}
+        {S("Contact")}
+        <div style={{marginBottom:10}}>
+          <label className="form-label">Phone</label>
+          <input className="form-input" type="tel" value={form.phone||""} onBlur={e=>setForm(f=>({...f,phone:fmtPhone(e.target.value)}))} onChange={e=>setForm(f=>({...f,phone:e.target.value}))}/>
+        </div>
+        {F("Email","email","email")}
+        {S("Address")}
+        {F("Line 1","address_line1","text","Street number and name")}
+        {F("Line 2","address_line2","text","Suburb / complex")}
+        {F("Line 3","address_line3","text","City / town")}
+        {R2(F("Province","address_province"),F("Postal code","address_postal"))}
+        {S("Medical aid")}
+        {R2(F("Aid name","aid_name"),F("Aid number","aid_number"))}
+        {F("Dependant code","dependant_code","text","00 = main")}
+        {S("System reference")}
+        {F("Dispensing profile no.","disp_profile_no")}
+        {S("Emergency contact")}
+        {R2(F("Next of kin","nok_name"),F("NOK phone","nok_phone","tel"))}
+        <div className="divider"/>
+        <div style={{display:"flex",gap:10}}>
+          <button onClick={onClose} className="btn-ghost" style={{flex:1}}>Cancel</button>
+          <button onClick={save} disabled={saving} className="btn-primary" style={{flex:2,textAlign:"center"}}>{saving?"Saving…":"Save changes"}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── StaffManagerModal ──
+function StaffManagerModal({staffList,setStaffList,currentUser,onClose}){
+  const[newStaff,setNewStaff]=useState({name:"",title:"",role:"dispenser",pin:""});
+  const[editingPin,setEditingPin]=useState(null);
+  const[newPin,setNewPin]=useState("");
+
+  function addStaff(){
+    if(!newStaff.name.trim()||!newStaff.pin.trim())return alert("Name and PIN required");
+    if(newStaff.pin.length!==5||isNaN(newStaff.pin))return alert("PIN must be exactly 5 digits");
+    const id="S"+String(Date.now()).slice(-4);
+    setStaffList(l=>[...l,{...newStaff,id}]);
+    setNewStaff({name:"",title:"",role:"dispenser",pin:""});
+  }
+  function removeStaff(id){
+    if(id===currentUser.id)return alert("You cannot remove yourself.");
+    if(!window.confirm("Remove this staff member?"))return;
+    setStaffList(l=>l.filter(s=>s.id!==id));
+  }
+  function savePin(id){
+    if(newPin.length!==5||isNaN(newPin))return alert("PIN must be exactly 5 digits");
+    setStaffList(l=>l.map(s=>s.id===id?{...s,pin:newPin}:s));
+    setEditingPin(null);setNewPin("");
+  }
+
+  const inp2={...{width:"100%",padding:"8px 10px",fontSize:13,border:"1px solid var(--border-2)",borderRadius:"var(--radius-sm)",background:"#fff",color:"var(--text-1)",fontFamily:"'Inter',system-ui,sans-serif",outline:"none",boxSizing:"border-box"}};
+
+  return(
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-box" style={{maxWidth:580}} onClick={e=>e.stopPropagation()}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+          <div style={{fontSize:15,fontWeight:600,color:"var(--navy)"}}>Manage staff</div>
+          <button onClick={onClose} style={{background:"none",border:"none",fontSize:20,cursor:"pointer",color:"var(--text-3)"}}><i className="ti ti-x"/></button>
+        </div>
+
+        {["admin","dispenser","locum"].map(role=>(
+          <div key={role} style={{marginBottom:16}}>
+            <div className="section-title">{RL[role]}</div>
+            {staffList.filter(s=>s.role===role).map(s=>(
+              <div key={s.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:"var(--surface-2)",border:"1px solid var(--border)",borderRadius:"var(--radius-sm)",marginBottom:6}}>
+                <div style={{flex:1}}>
+                  <div style={{fontWeight:600,fontSize:13,color:"var(--navy)"}}>{s.name}</div>
+                  <div style={{fontSize:11,color:"var(--text-3)"}}>{s.title||"—"}</div>
+                </div>
+                {editingPin===s.id?(
+                  <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                    <input style={{...inp2,width:90,letterSpacing:"0.2em"}} type="text" maxLength={5} placeholder="New PIN" value={newPin} onChange={e=>setNewPin(e.target.value.replace(/\D/g,"").slice(0,5))}/>
+                    <button onClick={()=>savePin(s.id)} className="btn-primary" style={{padding:"6px 12px",fontSize:12}}>Save</button>
+                    <button onClick={()=>{setEditingPin(null);setNewPin("");}} className="btn-ghost" style={{padding:"6px 10px",fontSize:12}}>✕</button>
+                  </div>
+                ):(
+                  <div style={{display:"flex",gap:6}}>
+                    <button onClick={()=>{setEditingPin(s.id);setNewPin("");}} className="btn-ghost" style={{fontSize:12,padding:"5px 10px"}}>Change PIN</button>
+                    {s.id!==currentUser.id&&<button onClick={()=>removeStaff(s.id)} className="btn-danger" style={{padding:"5px 10px"}}>Remove</button>}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        ))}
+
+        <div className="divider"/>
+        <div style={{fontSize:13,fontWeight:600,color:"var(--navy)",marginBottom:10}}>Add new staff member</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+          <div><label className="form-label">Full name *</label><input style={inp2} value={newStaff.name} onChange={e=>setNewStaff(f=>({...f,name:e.target.value}))} placeholder="e.g. Thabo Nkosi"/></div>
+          <div><label className="form-label">Job title</label><input style={inp2} value={newStaff.title} onChange={e=>setNewStaff(f=>({...f,title:e.target.value}))} placeholder="e.g. Pharmacist"/></div>
+          <div><label className="form-label">Role *</label>
+            <select style={{...inp2,appearance:"none"}} value={newStaff.role} onChange={e=>setNewStaff(f=>({...f,role:e.target.value}))}>
+              <option value="admin">Admin</option>
+              <option value="dispenser">Dispenser</option>
+              <option value="locum">Locum</option>
+            </select>
+          </div>
+          <div><label className="form-label">PIN (5 digits) *</label><input style={{...inp2,letterSpacing:"0.2em"}} type="text" maxLength={5} value={newStaff.pin} onChange={e=>setNewStaff(f=>({...f,pin:e.target.value.replace(/\D/g,"").slice(0,5)}))} placeholder="e.g. 84721"/></div>
+        </div>
+        <button onClick={addStaff} className="btn-primary" style={{width:"100%",textAlign:"center"}}><i className="ti ti-user-plus" style={{marginRight:6}}/>Add staff member</button>
+      </div>
+    </div>
+  );
 }
 
 function LoginScreen({onLogin}){
