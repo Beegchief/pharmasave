@@ -10,7 +10,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Inter',system-ui,sans-serif;background:#2e3f57;color:#e8e0d0;min-height:100vh}
+body{font-family:'Inter',system-ui,sans-serif;background:#1a2235;color:#e8e0d0;min-height:100vh}
 :root{
   --navy:#1a2235;--navy-mid:#243049;--navy-light:#2e3d5e;--navy-card:#1f2b42;
   --gold:#c9a84c;--gold-light:#e8c97a;--gold-pale:rgba(201,168,76,0.12);--gold-border:rgba(201,168,76,0.3);
@@ -304,37 +304,51 @@ function DocScanner({imageSrc,onAccept,onRetake}){
     setProcessing(true);
     setTimeout(()=>{
       const[tl,tr,br,bl]=corners;
-      // Accurate perspective warp using bilinear interpolation
       const outW=Math.round(Math.max(Math.hypot(tr.x-tl.x,tr.y-tl.y),Math.hypot(br.x-bl.x,br.y-bl.y)));
       const outH=Math.round(Math.max(Math.hypot(bl.x-tl.x,bl.y-tl.y),Math.hypot(br.x-tr.x,br.y-tr.y)));
-      // Cap at 1400px for performance
-      const cap=1400;const sc=Math.min(1,cap/Math.max(outW,outH));
+      // Cap at 1200px for mobile performance
+      const cap=1200;const sc=Math.min(1,cap/Math.max(outW,outH));
       const W=Math.round(outW*sc),H=Math.round(outH*sc);
       const out=document.createElement("canvas");out.width=W;out.height=H;
       const ctx=out.getContext("2d");
-      // Sample in strips for speed — process 4 rows at a time
-      for(let y=0;y<H;y++){
-        const v=y/H;
-        const topX=(1-v)*tl.x+v*bl.x,topY=(1-v)*tl.y+v*bl.y;
-        const botX=(1-v)*tr.x+v*br.x,botY=(1-v)*tr.y+v*br.y;
-        for(let x=0;x<W;x++){
-          const u=x/W;
-          const sx=topX+u*(botX-topX);
-          const sy=topY+u*(botY-topY);
-          ctx.drawImage(imgEl,Math.round(sx),Math.round(sy),1,1,x,y,1,1);
+      // Fast warp: draw 16 sub-quads instead of per-pixel
+      const SEGS=16;
+      for(let row=0;row<SEGS;row++){
+        for(let col=0;col<SEGS;col++){
+          const u0=col/SEGS,u1=(col+1)/SEGS;
+          const v0=row/SEGS,v1=(row+1)/SEGS;
+          // source quad corners via bilinear
+          function src(u,v){
+            return{
+              x:(1-u)*(1-v)*tl.x+u*(1-v)*tr.x+u*v*br.x+(1-u)*v*bl.x,
+              y:(1-u)*(1-v)*tl.y+u*(1-v)*tr.y+u*v*br.y+(1-u)*v*bl.y
+            };
+          }
+          const s00=src(u0,v0),s10=src(u1,v0),s11=src(u1,v1),s01=src(u0,v1);
+          const dx=s10.x-s00.x,dy=s10.y-s00.y;
+          const sw=Math.hypot(dx,dy),sh=Math.hypot(s01.x-s00.x,s01.y-s00.y);
+          if(sw<1||sh<1)continue;
+          const angle=Math.atan2(dy,dx);
+          const dstX=Math.round(col/SEGS*W),dstY=Math.round(row/SEGS*H);
+          const dstW=Math.round(W/SEGS)+1,dstH=Math.round(H/SEGS)+1;
+          ctx.save();
+          ctx.translate(dstX+dstW/2,dstY+dstH/2);
+          ctx.rotate(angle);
+          ctx.drawImage(imgEl,s00.x,s00.y,sw,sh,-dstW/2,-dstH/2,dstW,dstH);
+          ctx.restore();
         }
       }
-      // Contrast + slight sharpen
+      // Greyscale + contrast enhancement
       const id=ctx.getImageData(0,0,W,H);const d=id.data;
       for(let i=0;i<d.length;i+=4){
         const g=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2];
-        const e=Math.min(255,Math.max(0,(g-128)*1.45+150));
+        const e=Math.min(255,Math.max(0,(g-128)*1.5+152));
         d[i]=d[i+1]=d[i+2]=e;
       }
       ctx.putImageData(id,0,0);
-      setProcessed(out.toDataURL("image/jpeg",0.9));
+      setProcessed(out.toDataURL("image/jpeg",0.88));
       setMode("preview");setProcessing(false);
-    },40);
+    },20);
   }
 
   function acceptScan(){
@@ -756,7 +770,15 @@ function UploadScriptPanel({currentUser,patients,selPtId,onSaved,onAudit,compact
 
 // ── App ──────────────────────────────────────────────────────────────────────
 function App(){
-  const[currentUser,setCurrentUser]=useState(null);
+  const[currentUser,setCurrentUser]=useState(()=>{
+    try{const s=sessionStorage.getItem("pharmasave_user");return s?JSON.parse(s):null;}catch(e){return null;}
+  });
+
+  // Persist session across refresh
+  useEffect(()=>{
+    if(currentUser)sessionStorage.setItem("pharmasave_user",JSON.stringify(currentUser));
+    else sessionStorage.removeItem("pharmasave_user");
+  },[currentUser]);
   const[patients,setPatients]=useState([]);
   const[scripts,setScripts]=useState([]);
   const[loading,setLoading]=useState(false);
@@ -832,6 +854,7 @@ function App(){
           <span className="user-name">{currentUser.name.split(" ")[0]}</span>
           <span className={"role-pill role-"+currentUser.role}>{RL[currentUser.role]}</span>
         </div>
+        <button onClick={()=>{loadPatients();if(selPt)loadScripts(selPt.id);}} className="signout-btn" title="Refresh data" style={{marginRight:4}}><i className="ti ti-refresh"/></button>
         <button className="signout-btn" onClick={()=>{setCurrentUser(null);setTab(0);setSelPt(null);setPatients([]);setScripts([]);}}>Sign out</button>
       </div>
 
