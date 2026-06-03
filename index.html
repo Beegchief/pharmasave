@@ -1,3 +1,5 @@
+--- START OF FILE text/plain ---
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -591,7 +593,7 @@ function StaffManagerModal({staffList,setStaffList,currentUser,onClose}){
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
           <div><label style={lS}>Full name *</label><input style={inpS} value={newStaff.name} onChange={e=>setNewStaff(f=>({...f,name:e.target.value}))} placeholder="e.g. Thabo Nkosi"/></div>
           <div><label style={lS}>Job title</label><input style={inpS} value={newStaff.title} onChange={e=>setNewStaff(f=>({...f,title:e.target.value}))} placeholder="e.g. Pharmacist"/></div>
-          <div><label style={lS}>Role *</label><select style={inpS} value={newStaff.role} onChange={e=>setNewStaff(f=>({...f,role:e.target.value}))}><option value="admin">Admin</option><option value="dispenser">Dispenser</option><option value="locum">Locum</option></select></div>
+          <div><label style={lS}>Role *</label><select style={inpS} value={newStaff.role} onChange={e=>setNewStaff(f=>({...f,role:newStaff.role}))} onChange={e=>setNewStaff(f=>({...f,role:e.target.value}))}><option value="admin">Admin</option><option value="dispenser">Dispenser</option><option value="locum">Locum</option></select></div>
           <div><label style={lS}>PIN (5 digits) *</label><input style={{...inpS,letterSpacing:"0.2em"}} type="text" maxLength={5} value={newStaff.pin} onChange={e=>setNewStaff(f=>({...f,pin:e.target.value.replace(/\D/g,"").slice(0,5)}))} placeholder="e.g. 84721"/></div>
         </div>
         <button onClick={addStaff} className="btn-primary" style={{width:"100%",padding:"10px",textAlign:"center"}}>Add staff member</button>
@@ -990,7 +992,7 @@ function App(){
       {/* Add Patient */}
       {TABS[tab]==="Add Patient"&&<div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:24,alignItems:"start"}}>
-          {/* LEFT COLUMN — Identity & Contact */}
+          {/* LEFT COLUMN — Identity, Contact & Emergency Contact */}
           <div>
             <div className="section-title">Identity</div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
@@ -1014,9 +1016,14 @@ function App(){
               <div style={{fontSize:11,color:"var(--text-3)",marginTop:3}}>Auto-converts 0xxx to +27xxx on exit.</div>
             </div>
             <Fld label="Email" name="email" val={newPt} set={setNewPt} type="email" ph="optional"/>
+            <div className="section-title" style={{marginTop:14}}>Emergency contact</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+              <Fld label="Next of kin name" name="nok_name" val={newPt} set={setNewPt}/>
+              <Fld label="Next of kin phone" name="nok_phone" val={newPt} set={setNewPt} type="tel"/>
+            </div>
           </div>
 
-          {/* RIGHT COLUMN — Address, Medical aid, System, Emergency */}
+          {/* RIGHT COLUMN — Address, Medical aid, System */}
           <div>
             <div className="section-title">Address</div>
             <Fld label="Line 1" name="address_line1" val={newPt} set={setNewPt} ph="Street number and name"/>
@@ -1034,11 +1041,6 @@ function App(){
             <Fld label="Dependant code" name="dependant_code" val={newPt} set={setNewPt} ph="00 = main, 01 = first"/>
             <div className="section-title" style={{marginTop:14}}>System reference</div>
             <Fld label="Dispensing system profile number" name="disp_profile_no" val={newPt} set={setNewPt} ph="e.g. DISP-4421"/>
-            <div className="section-title" style={{marginTop:14}}>Emergency contact</div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-              <Fld label="Next of kin name" name="nok_name" val={newPt} set={setNewPt}/>
-              <Fld label="Next of kin phone" name="nok_phone" val={newPt} set={setNewPt} type="tel"/>
-            </div>
           </div>
         </div>
         {/* Centred button below both columns */}
